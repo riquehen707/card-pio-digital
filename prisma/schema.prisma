@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model VisitorSession {
+  id          String           @id
+  firstSeenAt DateTime         @default(now())
+  lastSeenAt  DateTime         @updatedAt
+  landingPath String?
+  referrer    String?
+  userAgent   String?
+  locale      String?
+  timezone    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmTerm     String?
+  utmContent  String?
+  gclid       String?
+  gbraid      String?
+  wbraid      String?
+  fbclid      String?
+  events      AnalyticsEvent[]
+  leads       Lead[]
+
+  @@index([firstSeenAt])
+  @@index([utmCampaign])
+  @@index([gclid])
+}
+
+model AnalyticsEvent {
+  id          String         @id @default(cuid())
+  sessionId   String
+  type        String
+  pagePath    String?
+  productId   String?
+  productName String?
+  value       Decimal?       @db.Decimal(12, 2)
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+  session     VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([type, createdAt])
+  @@index([productId, createdAt])
+}
+
+model Lead {
+  id             String          @id @default(cuid())
+  sessionId      String?
+  status         LeadStatus      @default(WHATSAPP_CLICKED)
+  source         String          @default("whatsapp")
+  whatsappNumber String?
+  subtotal       Decimal         @db.Decimal(12, 2)
+  deliveryFee    Decimal         @db.Decimal(12, 2)
+  total          Decimal         @db.Decimal(12, 2)
+  currency       String          @default("BRL")
+  locationUrl    String?
+  latitude       Float?
+  longitude      Float?
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmTerm        String?
+  utmContent     String?
+  gclid          String?
+  gbraid         String?
+  wbraid         String?
+  fbclid         String?
+  rawPayload     Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  items          LeadItem[]
+  session        VisitorSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([utmCampaign, createdAt])
+  @@index([gclid])
+}
+
+model LeadItem {
+  id          String   @id @default(cuid())
+  leadId      String
+  productId   String
+  productName String
+  category    String?
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(12, 2)
+  fillings    Json?
+  createdAt   DateTime @default(now())
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([productId, createdAt])
+}
+
+model GoogleAdsDailyMetric {
+  id               String   @id @default(cuid())
+  customerId       String
+  campaignId       String
+  campaignName     String
+  day              DateTime
+  impressions      Int      @default(0)
+  clicks           Int      @default(0)
+  costMicros       BigInt   @default(0)
+  conversions      Float    @default(0)
+  conversionsValue Decimal? @db.Decimal(14, 2)
+  ctr              Float?
+  averageCpc       Decimal? @db.Decimal(14, 6)
+  rawPayload       Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([customerId, campaignId, day])
+  @@index([day])
+}
+
+model SyncRun {
+  id           String     @id @default(cuid())
+  provider     String
+  resource     String
+  status       SyncStatus
+  startedAt    DateTime   @default(now())
+  finishedAt   DateTime?
+  details      Json?
+  errorMessage String?
+
+  @@index([provider, startedAt])
+  @@index([status, startedAt])
+}
+
+enum LeadStatus {
+  WHATSAPP_CLICKED
+  CONTACTED
+  CONVERTED
+  LOST
+}
+
+enum SyncStatus {
+  STARTED
+  SUCCESS
+  FAILED
+}
+

@@ -1,103 +1,190 @@
-import Image from "next/image";
+"use client"
+
+import { useEffect, useMemo, useRef, useState } from "react"
+import { ShoppingBag, Smartphone, Truck } from "lucide-react"
+import { toast } from "sonner"
+
+import { CartDrawer } from "@/components/CartDrawer"
+import CategoriasGrid from "@/components/CategoriasGrid"
+import RecheioDialog from "@/components/RecheioDialog"
+import { Badge } from "@/components/ui/badge"
+import { produtos } from "@/data/produtos"
+import { useCarrinho } from "@/hooks/useCarrinho"
+import { useAnalytics } from "@/components/AnalyticsProvider"
+import { SITE_NAME } from "@/lib/site"
+import type { Produto } from "@/types/produto"
+
+function HeroCard({
+  titulo,
+  descricao,
+  icon,
+}: {
+  titulo: string
+  descricao: string
+  icon: React.ReactNode
+}) {
+  return (
+    <div className="rounded-[28px] border border-border bg-card/80 p-4 shadow-sm">
+      <div className="mb-3 inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+        {icon}
+      </div>
+      <h2 className="font-semibold text-foreground">{titulo}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
+    </div>
+  )
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const adicionarItem = useCarrinho((state) => state.adicionarItem)
+  const itensNoCarrinho = useCarrinho((state) => state.itens.length)
+  const { trackEvent } = useAnalytics()
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null)
+  const [dialogAberto, setDialogAberto] = useState(false)
+  const [recentAdded, setRecentAdded] = useState<Set<string>>(new Set())
+  const timersRef = useRef<Record<string, number>>({})
+
+  const produtosDisponiveis = useMemo(
+    () => produtos.filter((produto) => produto.disponivel !== false),
+    []
+  )
+
+  useEffect(() => {
+    return () => {
+      Object.values(timersRef.current).forEach((timer) => window.clearTimeout(timer))
+      timersRef.current = {}
+    }
+  }, [])
+
+  function marcarAdicionado(id: string) {
+    setRecentAdded((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+
+    if (timersRef.current[id]) {
+      window.clearTimeout(timersRef.current[id])
+    }
+
+    timersRef.current[id] = window.setTimeout(() => {
+      setRecentAdded((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      delete timersRef.current[id]
+    }, 1400)
+  }
+
+  function adicionarProduto(produto: Produto, recheios?: string[]) {
+    adicionarItem({
+      id: produto.id,
+      nome: produto.nome,
+      preco:
+        produto.precoPromocional && produto.precoPromocional < produto.preco
+          ? produto.precoPromocional
+          : produto.preco,
+      recheios: recheios && recheios.length > 0 ? recheios : undefined,
+    })
+
+    marcarAdicionado(produto.id)
+    void trackEvent({
+      type: "product_add",
+      productId: produto.id,
+      productName: produto.nome,
+      value:
+        produto.precoPromocional && produto.precoPromocional < produto.preco
+          ? produto.precoPromocional
+          : produto.preco,
+      metadata: {
+        categoria: produto.categoria,
+        recheios: recheios ?? [],
+      },
+    })
+    toast.success(`${produto.nome} foi adicionado ao carrinho.`)
+  }
+
+  function handleSelecionar(produto: Produto) {
+    if (produto.permiteRecheios) {
+      setProdutoSelecionado(produto)
+      setDialogAberto(true)
+      return
+    }
+
+    adicionarProduto(produto)
+  }
+
+  function handleConfirmarRecheios(recheios: string[]) {
+    if (!produtoSelecionado) return
+
+    adicionarProduto(produtoSelecionado, recheios)
+    setDialogAberto(false)
+    setProdutoSelecionado(null)
+  }
+
+  return (
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-28 pt-8 sm:px-6">
+      <section className="overflow-hidden rounded-[36px] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(15,118,110,0.18),_transparent_34%),radial-gradient(circle_at_right,_rgba(251,191,36,0.22),_transparent_28%),linear-gradient(180deg,rgba(255,251,239,1),rgba(255,255,255,1))] p-6 shadow-sm sm:p-8">
+        <div className="max-w-3xl space-y-5">
+          <Badge variant="secondary" className="w-fit">
+            Pedido rapido, PWA e localizacao fixa
+          </Badge>
+          <div className="space-y-3">
+            <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+              {SITE_NAME}
+            </h1>
+            <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
+              Escolha seus itens, salve sua localizacao uma vez e envie o pedido pelo WhatsApp
+              com a taxa de entrega calculada automaticamente.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">Carrinho persistente</Badge>
+            <Badge variant="outline">Instalavel no celular</Badge>
+            <Badge variant="outline">{itensNoCarrinho} item(ns) no carrinho</Badge>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-3">
+        <HeroCard
+          titulo="Peca em poucos passos"
+          descricao="O fluxo foi simplificado para sair do cardapio ao WhatsApp sem perder o contexto."
+          icon={<ShoppingBag className="size-5" />}
+        />
+        <HeroCard
+          titulo="Entrega calculada por distancia"
+          descricao="A taxa usa a localizacao fixa salva ou um link alternativo do Google Maps."
+          icon={<Truck className="size-5" />}
+        />
+        <HeroCard
+          titulo="Pronto para instalar"
+          descricao="O site agora pode funcionar como app no celular, com suporte offline basico."
+          icon={<Smartphone className="size-5" />}
+        />
+      </section>
+
+      <CategoriasGrid
+        produtos={produtosDisponiveis}
+        addedIds={recentAdded}
+        onSelecionar={handleSelecionar}
+      />
+
+      {produtoSelecionado ? (
+        <RecheioDialog
+          aberto={dialogAberto}
+          produto={produtoSelecionado}
+          onClose={() => {
+            setDialogAberto(false)
+            setProdutoSelecionado(null)
+          }}
+          onConfirmar={handleConfirmarRecheios}
+        />
+      ) : null}
+
+      <CartDrawer />
+    </main>
+  )
 }
