@@ -1,4 +1,3 @@
-import { RECHEIOS_PADRAO } from "@/data/recheios"
 import type { ItemCarrinho } from "@/types/carrinho"
 
 export type GrupoCarrinho = {
@@ -20,12 +19,7 @@ function normalizarRecheios(recheios?: string[]) {
 }
 
 function criarDescricao(nome: string, recheios: string[]) {
-  if (recheios.length === 0) return `${nome} sem recheios`
-
-  const faltando = RECHEIOS_PADRAO.filter((recheio) => !recheios.includes(recheio))
-  if (faltando.length === 0) return `${nome} completo`
-  if (faltando.length === RECHEIOS_PADRAO.length) return `${nome} sem recheios`
-
+  if (recheios.length === 0) return `${nome} sem adicionais`
   return `${nome} com ${recheios.join(", ")}`
 }
 

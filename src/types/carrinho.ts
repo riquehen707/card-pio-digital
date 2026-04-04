@@ -3,6 +3,8 @@ export type Coordenadas = {
   lng: number
 }
 
+export type MetodoPagamento = "pix" | "cartao" | "dinheiro"
+
 export type ItemCarrinho = {
   id: string
   nome: string
@@ -15,4 +17,11 @@ export type LocalizacaoSalva = {
   link: string
   origem: "gps" | "manual"
   atualizadaEm: string
+}
+
+export type PagamentoPedido = {
+  metodo: MetodoPagamento
+  precisaTroco?: boolean | null
+  valorEntregue?: number | null
+  trocoCalculado?: number | null
 }

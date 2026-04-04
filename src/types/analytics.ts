@@ -1,3 +1,5 @@
+import type { MetodoPagamento } from "@/types/carrinho"
+
 export type AttributionSnapshot = {
   utmSource?: string | null
   utmMedium?: string | null
@@ -38,5 +40,9 @@ export type LeadCheckoutInput = {
   locationUrl?: string | null
   latitude?: number | null
   longitude?: number | null
+  paymentMethod?: MetodoPagamento | null
+  needsChange?: boolean | null
+  cashTendered?: number | null
+  changeAmount?: number | null
   items: LeadCheckoutItemInput[]
 }

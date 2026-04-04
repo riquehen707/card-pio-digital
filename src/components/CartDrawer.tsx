@@ -2,29 +2,72 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Drawer } from "vaul"
-import { Loader2, MapPin, Send, Trash2, X } from "lucide-react"
+import {
+  Banknote,
+  CreditCard,
+  Loader2,
+  MapPin,
+  QrCode,
+  Send,
+  ShoppingBag,
+  Trash2,
+  X,
+} from "lucide-react"
 import { toast } from "sonner"
 
+import { useAnalytics } from "@/components/AnalyticsProvider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { useAnalytics } from "@/components/AnalyticsProvider"
 import { agruparItens } from "@/features/carrinho/agruparItens"
 import { calcularPrecoEntrega } from "@/features/carrinho/calcularEntrega"
 import { useCarrinho } from "@/hooks/useCarrinho"
 import { reportGoogleAdsConversion } from "@/lib/googleAds"
+import { cn } from "@/lib/utils"
 import {
   criarLinkGoogleMaps,
   extrairCoordenadasDoLink,
   formatarCoordenadas,
 } from "@/lib/maps"
 import { WHATSAPP_NUMBER } from "@/lib/site"
-import type { Coordenadas, LocalizacaoSalva } from "@/types/carrinho"
+import type {
+  Coordenadas,
+  LocalizacaoSalva,
+  MetodoPagamento,
+  PagamentoPedido,
+} from "@/types/carrinho"
 
 const BRL = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 })
+
+const paymentOptions: Array<{
+  id: MetodoPagamento
+  label: string
+  icon: typeof QrCode
+  description: string
+}> = [
+  {
+    id: "pix",
+    label: "Pix",
+    icon: QrCode,
+    description: "Pagamento combinado no WhatsApp.",
+  },
+  {
+    id: "cartao",
+    label: "Cartão",
+    icon: CreditCard,
+    description: "Crédito ou débito na entrega.",
+  },
+  {
+    id: "dinheiro",
+    label: "Dinheiro",
+    icon: Banknote,
+    description: "Confirme se precisa de troco.",
+  },
+]
 
 type EstadoPermissao = PermissionState | "unsupported"
 
@@ -57,8 +100,29 @@ function criarLocalizacaoSalva(
 }
 
 function descreverGrupo(nome: string, recheios: string[]) {
-  if (recheios.length === 0) return `${nome} sem recheios`
+  if (recheios.length === 0) return `${nome} sem adicionais`
   return `${nome} com ${recheios.join(", ")}`
+}
+
+function formatarPagamento(pagamento: PagamentoPedido) {
+  switch (pagamento.metodo) {
+    case "pix":
+      return "Pix"
+    case "cartao":
+      return "Cartão"
+    case "dinheiro":
+      return "Dinheiro"
+    default:
+      return "Pagamento"
+  }
+}
+
+function parseCurrencyValue(value: string) {
+  const normalized = value.replace(",", ".").trim()
+  if (!normalized) return null
+
+  const parsed = Number.parseFloat(normalized)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 export function CartDrawer() {
@@ -76,6 +140,9 @@ export function CartDrawer() {
   const [geoLoading, setGeoLoading] = useState(false)
   const [permissaoLocalizacao, setPermissaoLocalizacao] =
     useState<EstadoPermissao>("unsupported")
+  const [metodoPagamento, setMetodoPagamento] = useState<MetodoPagamento>("pix")
+  const [precisaTroco, setPrecisaTroco] = useState<boolean | null>(null)
+  const [valorEmDinheiro, setValorEmDinheiro] = useState("")
 
   useEffect(() => {
     if (typeof window === "undefined" || !("permissions" in navigator)) {
@@ -106,6 +173,13 @@ export function CartDrawer() {
     }
   }, [])
 
+  useEffect(() => {
+    if (metodoPagamento !== "dinheiro") {
+      setPrecisaTroco(null)
+      setValorEmDinheiro("")
+    }
+  }, [metodoPagamento])
+
   const grupos = useMemo(() => agruparItens(itens), [itens])
   const subtotal = useMemo(
     () => grupos.reduce((total, grupo) => total + grupo.precoUnitario * grupo.quantidade, 0),
@@ -131,6 +205,24 @@ export function CartDrawer() {
     [localizacaoAtiva]
   )
   const total = subtotal + (entrega?.preco ?? 0)
+  const resumoItens = `${itens.length} ${itens.length === 1 ? "item" : "itens"}`
+
+  const valorEmDinheiroNumero = useMemo(
+    () => parseCurrencyValue(valorEmDinheiro),
+    [valorEmDinheiro]
+  )
+  const trocoCalculado =
+    metodoPagamento === "dinheiro" &&
+    precisaTroco === true &&
+    valorEmDinheiroNumero &&
+    valorEmDinheiroNumero > total
+      ? Number((valorEmDinheiroNumero - total).toFixed(2))
+      : null
+
+  const trocoInvalido =
+    metodoPagamento === "dinheiro" &&
+    precisaTroco === true &&
+    (valorEmDinheiroNumero === null || valorEmDinheiroNumero <= total)
 
   async function solicitarLocalizacaoAtual() {
     if (typeof window === "undefined") return null
@@ -197,6 +289,29 @@ export function CartDrawer() {
     toast.success("Link salvo como localização fixa.")
   }
 
+  function construirPagamento(totalAtual: number): PagamentoPedido | null {
+    if (metodoPagamento !== "dinheiro") {
+      return { metodo: metodoPagamento }
+    }
+
+    if (precisaTroco === null) {
+      toast.error("Confirme se o pagamento em dinheiro precisa de troco.")
+      return null
+    }
+
+    if (precisaTroco && (valorEmDinheiroNumero === null || valorEmDinheiroNumero <= totalAtual)) {
+      toast.error("Informe uma nota maior que o total para calcular o troco.")
+      return null
+    }
+
+    return {
+      metodo: "dinheiro",
+      precisaTroco,
+      valorEntregue: precisaTroco ? valorEmDinheiroNumero : null,
+      trocoCalculado: precisaTroco ? trocoCalculado : null,
+    }
+  }
+
   async function enviarPedido() {
     if (linkAlternativoInvalido) {
       toast.error("Cole um link válido do Google Maps ou use sua localização fixa.")
@@ -215,6 +330,8 @@ export function CartDrawer() {
 
     const entregaAtual = calcularPrecoEntrega(localizacaoParaPedido.coordenadas)
     const totalAtual = subtotal + entregaAtual.preco
+    const pagamento = construirPagamento(totalAtual)
+    if (!pagamento) return
 
     const linhas = [
       "Olá! Gostaria de fazer um pedido:",
@@ -227,12 +344,26 @@ export function CartDrawer() {
       ),
       "",
       `Subtotal: ${BRL.format(subtotal)}`,
-      `Entrega: ${BRL.format(entregaAtual.preco)}`,
+      `Entrega: ${BRL.format(entregaAtual.preco)} (${entregaAtual.distanciaKm.toFixed(2)} km)`,
       `Total: ${BRL.format(totalAtual)}`,
+      `Pagamento: ${formatarPagamento(pagamento)}`,
+    ]
+
+    if (pagamento.metodo === "dinheiro") {
+      linhas.push(`Precisa de troco: ${pagamento.precisaTroco ? "Sim" : "Não"}`)
+      if (pagamento.precisaTroco && pagamento.valorEntregue) {
+        linhas.push(`Troco para: ${BRL.format(pagamento.valorEntregue)}`)
+      }
+      if (pagamento.precisaTroco && pagamento.trocoCalculado) {
+        linhas.push(`Troco estimado: ${BRL.format(pagamento.trocoCalculado)}`)
+      }
+    }
+
+    linhas.push(
       "",
       `Localização: ${localizacaoParaPedido.link}`,
-      `Coordenadas: ${formatarCoordenadas(localizacaoParaPedido.coordenadas)}`,
-    ]
+      `Coordenadas: ${formatarCoordenadas(localizacaoParaPedido.coordenadas)}`
+    )
 
     await fetch("/api/leads", {
       method: "POST",
@@ -248,6 +379,13 @@ export function CartDrawer() {
         locationUrl: localizacaoParaPedido.link,
         latitude: localizacaoParaPedido.coordenadas.lat,
         longitude: localizacaoParaPedido.coordenadas.lng,
+        paymentMethod: pagamento.metodo,
+        needsChange:
+          pagamento.metodo === "dinheiro" ? pagamento.precisaTroco ?? null : null,
+        cashTendered:
+          pagamento.metodo === "dinheiro" ? pagamento.valorEntregue ?? null : null,
+        changeAmount:
+          pagamento.metodo === "dinheiro" ? pagamento.trocoCalculado ?? null : null,
         items: grupos.map((grupo) => ({
           productId: grupo.productId,
           productName: grupo.nome,
@@ -265,6 +403,8 @@ export function CartDrawer() {
       value: totalAtual,
       metadata: {
         items: grupos.length,
+        paymentMethod: pagamento.metodo,
+        deliveryDistanceKm: entregaAtual.distanciaKm,
       },
     })
 
@@ -287,10 +427,25 @@ export function CartDrawer() {
       <Drawer.Trigger asChild>
         <button
           type="button"
-          className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--primary),rgba(246,187,88,1))] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-xl shadow-primary/30 transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="fixed bottom-4 left-1/2 z-50 grid w-[min(420px,calc(100vw-1.25rem))] -translate-x-1/2 grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[26px] border border-[#8d4b1a]/20 bg-[linear-gradient(135deg,rgba(183,86,24,0.98),rgba(246,187,88,0.98))] px-4 py-3 text-primary-foreground shadow-[0_20px_40px_rgba(116,50,18,0.28)] transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[260px] sm:translate-x-0"
         >
-          <span>Carrinho</span>
-          <Badge variant="secondary">{itens.length}</Badge>
+          <span className="inline-flex size-11 items-center justify-center rounded-full bg-black/12 shadow-inner shadow-black/5">
+            <ShoppingBag className="size-5" />
+          </span>
+
+          <span className="min-w-0 text-left">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/78">
+              Seu pedido
+            </span>
+            <span className="block text-sm font-semibold leading-tight">Abrir carrinho</span>
+            <span className="block text-xs text-primary-foreground/78">
+              {resumoItens} • {BRL.format(total)}
+            </span>
+          </span>
+
+          <Badge className="justify-self-end rounded-full border-0 bg-background/92 px-2.5 py-1 text-xs font-semibold text-foreground shadow-none">
+            {itens.length}
+          </Badge>
         </button>
       </Drawer.Trigger>
 
@@ -319,7 +474,7 @@ export function CartDrawer() {
           </div>
 
           <div className="flex-1 space-y-5 overflow-y-auto pb-4">
-            <section className="rounded-[28px] border border-border bg-card/80 p-4">
+            <section className="rounded-[28px] border border-border bg-card/80 p-4 shadow-[0_14px_30px_rgba(95,42,15,0.05)]">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h3 className="font-semibold text-foreground">Itens do pedido</h3>
@@ -363,7 +518,113 @@ export function CartDrawer() {
               </ul>
             </section>
 
-            <section className="rounded-[28px] border border-border bg-card/85 p-4">
+            <section className="rounded-[28px] border border-border bg-card/85 p-4 shadow-[0_14px_30px_rgba(95,42,15,0.05)]">
+              <div className="mb-3">
+                <h3 className="font-semibold text-foreground">Pagamento</h3>
+                <p className="text-sm text-muted-foreground">
+                  Escolha como vai pagar. Em dinheiro, a confirmação de troco é obrigatória.
+                </p>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-3">
+                {paymentOptions.map((option) => {
+                  const Icon = option.icon
+                  const active = metodoPagamento === option.id
+
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setMetodoPagamento(option.id)}
+                      className={cn(
+                        "rounded-[24px] border px-4 py-3 text-left transition-colors",
+                        active
+                          ? "border-primary/35 bg-primary/10 shadow-[0_12px_28px_rgba(117,54,20,0.08)]"
+                          : "border-border bg-background hover:bg-accent"
+                      )}
+                    >
+                      <div className="mb-2 inline-flex size-10 items-center justify-center rounded-full bg-background text-primary shadow-sm">
+                        <Icon className="size-4" />
+                      </div>
+                      <div className="font-medium text-foreground">{option.label}</div>
+                      <div className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {option.description}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {metodoPagamento === "dinheiro" ? (
+                <div className="mt-4 space-y-3 rounded-[24px] border border-border bg-background/80 p-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Precisa de troco?</p>
+                    <p className="text-xs text-muted-foreground">
+                      Essa confirmação é obrigatória para pagamento em dinheiro.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setPrecisaTroco(false)}
+                      className={cn(
+                        "rounded-2xl border px-4 py-3 text-sm transition-colors",
+                        precisaTroco === false
+                          ? "border-primary/35 bg-primary/10 text-foreground"
+                          : "border-border bg-background hover:bg-accent"
+                      )}
+                    >
+                      Não preciso de troco
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPrecisaTroco(true)}
+                      className={cn(
+                        "rounded-2xl border px-4 py-3 text-sm transition-colors",
+                        precisaTroco === true
+                          ? "border-primary/35 bg-primary/10 text-foreground"
+                          : "border-border bg-background hover:bg-accent"
+                      )}
+                    >
+                      Sim, preciso de troco
+                    </button>
+                  </div>
+
+                  {precisaTroco === true ? (
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-foreground">
+                        Nota/valor com que vai pagar
+                      </label>
+                      <Input
+                        value={valorEmDinheiro}
+                        onChange={(event) => setValorEmDinheiro(event.target.value)}
+                        type="number"
+                        min={total}
+                        step="0.01"
+                        inputMode="decimal"
+                        placeholder="Ex.: 50"
+                        invalid={trocoInvalido}
+                      />
+                      {trocoInvalido ? (
+                        <p className="text-sm text-destructive">
+                          Informe um valor maior que o total para calcular o troco.
+                        </p>
+                      ) : trocoCalculado !== null ? (
+                        <p className="text-sm text-muted-foreground">
+                          Troco estimado:{" "}
+                          <span className="font-semibold text-foreground">
+                            {BRL.format(trocoCalculado)}
+                          </span>
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+
+            <section className="rounded-[28px] border border-border bg-card/85 p-4 shadow-[0_14px_30px_rgba(95,42,15,0.05)]">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h3 className="font-semibold text-foreground">Localização do pedido</h3>
@@ -450,7 +711,7 @@ export function CartDrawer() {
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-border bg-card/85 p-4">
+            <section className="rounded-[28px] border border-border bg-card/85 p-4 shadow-[0_14px_30px_rgba(95,42,15,0.05)]">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h3 className="font-semibold text-foreground">Resumo</h3>
                 {entrega ? (
@@ -471,6 +732,12 @@ export function CartDrawer() {
                     {entrega ? BRL.format(entrega.preco) : "Defina a localização"}
                   </span>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Pagamento</span>
+                  <span className="font-medium text-foreground">
+                    {formatarPagamento({ metodo: metodoPagamento })}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between border-t border-border pt-2 text-base">
                   <span className="font-semibold text-foreground">Total</span>
                   <span className="font-semibold text-foreground">{BRL.format(total)}</span>
@@ -482,7 +749,7 @@ export function CartDrawer() {
           <div className="grid gap-2 border-t border-border pt-4 sm:grid-cols-[1fr_auto_auto]">
             <Button fullWidth onClick={enviarPedido} className="rounded-2xl">
               <Send className="size-4" />
-              Enviar no WhatsApp com localização
+              Enviar pedido no WhatsApp
             </Button>
             <Button variant="outline" onClick={limparCarrinho} className="rounded-2xl">
               Limpar

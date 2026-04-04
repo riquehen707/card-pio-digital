@@ -1,2 +1,1 @@
-export const RECHEIOS_PADRAO = ["Vatapa", "Salada", "Caruru", "Camarao"]
-
+export const OPCOES_COMIDA = ["Vatapá", "Salada", "Caruru", "Camarão", "Pimenta"] as const

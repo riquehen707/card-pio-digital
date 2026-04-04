@@ -1,94 +1,68 @@
-import { SITE_NAME } from "@/lib/site"
+import Image from "next/image"
+
 import { cn } from "@/lib/utils"
 
 type BrandMarkProps = {
   className?: string
-  hideText?: boolean
+  hideCaption?: boolean
   showTagline?: boolean
   size?: "sm" | "md" | "lg"
 }
 
 const sizeMap = {
   sm: {
-    gap: "gap-3",
-    tile: "size-12 rounded-[16px]",
-    stripe: "h-2.5",
-    inset: "inset-x-[10%]",
-    title: "text-2xl",
-    subtitle: "text-[11px]",
-    monogram: "text-[1.55rem]",
+    image: "w-[132px] sm:w-[156px]",
+    eyebrow: "text-[10px]",
+    tagline: "text-xs",
   },
   md: {
-    gap: "gap-3.5",
-    tile: "size-[3.75rem] rounded-[18px]",
-    stripe: "h-3",
-    inset: "inset-x-[11%]",
-    title: "text-[2rem]",
-    subtitle: "text-xs",
-    monogram: "text-[1.95rem]",
+    image: "w-[172px] sm:w-[208px]",
+    eyebrow: "text-[11px]",
+    tagline: "text-sm",
   },
   lg: {
-    gap: "gap-4",
-    tile: "size-20 rounded-[22px]",
-    stripe: "h-4",
-    inset: "inset-x-[12%]",
-    title: "text-[2.9rem] leading-[0.92] sm:text-[4.4rem]",
-    subtitle: "text-sm sm:text-base",
-    monogram: "text-[2.5rem] sm:text-[3rem]",
+    image: "w-[260px] sm:w-[340px] lg:w-[420px]",
+    eyebrow: "text-[11px] sm:text-xs",
+    tagline: "text-sm sm:text-base",
   },
 } as const
 
 export function BrandMark({
   className,
-  hideText = false,
+  hideCaption = false,
   showTagline = false,
   size = "md",
 }: BrandMarkProps) {
   const current = sizeMap[size]
 
   return (
-    <div className={cn("flex items-center", current.gap, className)}>
-      <div
-        aria-hidden="true"
-        className={cn(
-          "relative shrink-0 overflow-hidden border border-[#6d3822]/18 bg-[#F5A82F] shadow-[0_16px_35px_rgba(102,43,15,0.14)]",
-          current.tile
-        )}
-      >
-        <div className={cn("brand-pattern-strip absolute inset-x-0 top-0 opacity-95", current.stripe)} />
-        <div
-          className={cn("brand-pattern-strip absolute inset-x-0 bottom-0 rotate-180 opacity-95", current.stripe)}
-        />
-        <div className={cn("absolute inset-y-[18%] rounded-[22%] bg-[linear-gradient(180deg,rgba(248,188,74,0.96),rgba(242,161,36,0.98))]", current.inset)} />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
-          <span
-            className={cn("leading-none text-[#4B241D]", current.monogram)}
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 700 }}
-          >
-            AJ
-          </span>
-          <span className="h-1 w-[42%] rounded-full bg-[#E9471D]" />
-        </div>
-      </div>
+    <div className={cn("space-y-3", className)}>
+      <Image
+        src="/brand/logo-josi.png"
+        alt="Logo Acarajé da Josi"
+        width={1024}
+        height={1024}
+        priority={size === "lg"}
+        className={cn("h-auto", current.image)}
+        sizes={
+          size === "lg"
+            ? "(max-width: 640px) 260px, (max-width: 1024px) 340px, 420px"
+            : size === "md"
+              ? "(max-width: 640px) 172px, 208px"
+              : "(max-width: 640px) 132px, 156px"
+        }
+      />
 
-      {hideText ? null : (
-        <div className="space-y-1">
-          <div
-            className={cn("leading-none text-[#4B241D]", current.title)}
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 700 }}
-          >
-            {SITE_NAME}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className={cn("font-semibold uppercase tracking-[0.18em] text-[#E9471D]", current.subtitle)}>
-              Tabuleiro baiano
-            </span>
-            {showTagline ? (
-              <span className="text-sm text-muted-foreground">
-                Receita com presença forte e pedido simples.
-              </span>
-            ) : null}
-          </div>
+      {hideCaption ? null : (
+        <div className="space-y-1 pl-1">
+          <p className={cn("font-semibold uppercase tracking-[0.22em] text-primary/80", current.eyebrow)}>
+            Tabuleiro baiano
+          </p>
+          {showTagline ? (
+            <p className={cn("max-w-xl leading-relaxed text-muted-foreground", current.tagline)}>
+              Receita com presença forte, leitura limpa e pedido direto para o WhatsApp.
+            </p>
+          ) : null}
         </div>
       )}
     </div>
