@@ -33,7 +33,7 @@ export async function GET(
           alignItems: "center",
           justifyContent: "center",
           background:
-            "radial-gradient(circle at top left, rgba(15,118,110,0.95), rgba(13,148,136,1) 45%, rgba(251,191,36,0.95) 100%)",
+            "radial-gradient(circle at top left, rgba(183,86,24,0.96), rgba(145,59,18,1) 46%, rgba(87,127,53,0.92) 100%)",
           color: "#fffaf0",
           fontFamily: "sans-serif",
           position: "relative",
@@ -89,4 +89,3 @@ export async function GET(
     }
   )
 }
-

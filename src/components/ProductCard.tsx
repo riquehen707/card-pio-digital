@@ -34,8 +34,10 @@ function ProductImageFallback({ nome }: { nome: string }) {
       .toUpperCase() || "?"
 
   return (
-    <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(circle_at_top_left,_rgba(15,118,110,0.28),_transparent_60%),linear-gradient(180deg,rgba(255,248,235,1),rgba(253,242,208,1))]">
-      <span className="text-4xl font-semibold tracking-[0.2em] text-primary/70">{initials}</span>
+    <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(circle_at_top_left,_rgba(183,86,24,0.3),_transparent_60%),radial-gradient(circle_at_bottom_right,_rgba(84,128,54,0.18),_transparent_42%),linear-gradient(180deg,rgba(255,248,235,1),rgba(249,225,173,1))]">
+      <span className="text-3xl font-semibold tracking-[0.18em] text-primary/70 sm:text-4xl">
+        {initials}
+      </span>
     </div>
   )
 }
@@ -54,14 +56,14 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
 
   return (
     <>
-      <Card className="group h-full border-border/80 bg-card/90">
-        <div className="relative aspect-[4/3] overflow-hidden">
+      <Card className="group h-full border-border/80 bg-[linear-gradient(180deg,rgba(255,252,247,0.98),rgba(255,244,221,0.96))] shadow-[0_18px_44px_rgba(117,54,20,0.08)] transition-transform duration-300 hover:-translate-y-1">
+        <div className="relative aspect-[1/1] overflow-hidden sm:aspect-[4/3]">
           {hasImage ? (
             <Image
               src={produto.imagem!}
               alt={produto.nome}
               fill
-              sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 100vw"
+              sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 42vw"
               className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
               onError={() => setImageFailed(true)}
             />
@@ -75,15 +77,19 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
             <button
               type="button"
               onClick={() => setPreviewOpen(true)}
-              className="absolute right-3 top-3 inline-flex size-10 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="absolute right-2 top-2 inline-flex size-9 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-3 sm:top-3 sm:size-10"
               aria-label={`Ampliar imagem de ${produto.nome}`}
             >
               <Maximize2 className="size-4" />
             </button>
           ) : null}
 
-          <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-            {produto.permiteRecheios ? <Badge variant="secondary">Personalizavel</Badge> : null}
+          <div className="absolute left-2 top-2 flex max-w-[calc(100%-3rem)] flex-wrap gap-1.5 sm:left-3 sm:top-3 sm:max-w-[calc(100%-3.5rem)] sm:gap-2">
+            {produto.permiteRecheios ? (
+              <Badge variant="secondary" className="px-2 py-0.5 text-[10px] sm:px-3 sm:py-1 sm:text-xs">
+                Personalizavel
+              </Badge>
+            ) : null}
             {added ? <Badge variant="success">Adicionado</Badge> : null}
           </div>
 
@@ -96,26 +102,45 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
           ) : null}
         </div>
 
-        <CardContent className="space-y-3 p-5">
+        <CardContent className="space-y-2 p-3 sm:space-y-3 sm:p-5">
           <div className="space-y-1">
-            <h3 className="text-lg font-semibold leading-tight text-foreground">{produto.nome}</h3>
-            <p className="text-sm text-muted-foreground">{produto.categoria}</p>
+            <h3 className="line-clamp-2 text-base font-semibold leading-snug text-foreground sm:text-lg sm:leading-tight">
+              {produto.nome}
+            </h3>
+            <p className="text-xs text-muted-foreground sm:text-sm">{produto.categoria}</p>
           </div>
 
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-semibold text-primary">{BRL.format(precoAtual)}</span>
+            <span className="text-base font-semibold text-primary sm:text-lg">
+              {BRL.format(precoAtual)}
+            </span>
             {produto.precoPromocional && produto.precoPromocional < produto.preco ? (
-              <span className="text-sm text-muted-foreground line-through">
+              <span className="text-xs text-muted-foreground line-through sm:text-sm">
                 {BRL.format(produto.preco)}
               </span>
             ) : null}
           </div>
         </CardContent>
 
-        <CardFooter className="p-5 pt-0">
-          <Button fullWidth onClick={() => onSelecionar(produto)} disabled={indisponivel} className="rounded-2xl">
+        <CardFooter className="p-3 pt-0 sm:p-5 sm:pt-0">
+          <Button
+            fullWidth
+            onClick={() => onSelecionar(produto)}
+            disabled={indisponivel}
+            className="h-10 rounded-2xl px-3 text-xs sm:h-11 sm:px-5 sm:text-sm"
+          >
             <ShoppingCart className="size-4" />
-            {produto.permiteRecheios ? "Escolher recheios" : "Adicionar ao carrinho"}
+            {produto.permiteRecheios ? (
+              <>
+                <span className="sm:hidden">Recheios</span>
+                <span className="hidden sm:inline">Escolher recheios</span>
+              </>
+            ) : (
+              <>
+                <span className="sm:hidden">Adicionar</span>
+                <span className="hidden sm:inline">Adicionar ao carrinho</span>
+              </>
+            )}
           </Button>
         </CardFooter>
       </Card>

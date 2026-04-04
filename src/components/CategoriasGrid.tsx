@@ -57,12 +57,12 @@ export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Pro
 
   return (
     <div className="space-y-10">
-      <nav className="flex flex-wrap gap-2">
+      <nav className="mobile-category-nav -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
         {grupos.map(({ categoria }) => (
           <a
             key={categoria}
             href={`#categoria-${slugify(categoria)}`}
-            className="inline-flex rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex shrink-0 rounded-full border border-border bg-background/78 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             {categoria}
           </a>
@@ -76,14 +76,17 @@ export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Pro
             <p className="text-sm text-muted-foreground">
               {itens.length} {itens.length === 1 ? "item" : "itens"} nesta secao
             </p>
+            <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-primary/70 sm:hidden">
+              Arraste para navegar
+            </p>
           </div>
 
           <ul
             role="list"
-            className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] sm:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]"
+            className="mobile-product-carousel -mx-4 grid snap-x snap-mandatory grid-flow-col gap-3 overflow-x-auto px-4 pb-2 [grid-auto-columns:clamp(9.75rem,42vw,12rem)] sm:mx-0 sm:grid-flow-row sm:overflow-visible sm:px-0 sm:pb-0 sm:[grid-auto-columns:auto] sm:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))] sm:gap-5"
           >
             {itens.map((produto) => (
-              <li key={produto.id}>
+              <li key={produto.id} className="snap-start">
                 <ProductCard
                   produto={produto}
                   onSelecionar={onSelecionar}

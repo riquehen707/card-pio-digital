@@ -24,8 +24,8 @@ function HeroCard({
   icon: React.ReactNode
 }) {
   return (
-    <div className="rounded-[28px] border border-border bg-card/80 p-4 shadow-sm">
-      <div className="mb-3 inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+    <div className="rounded-[28px] border border-border/80 bg-[linear-gradient(180deg,rgba(255,250,243,0.98),rgba(255,241,214,0.82))] p-4 shadow-[0_18px_36px_rgba(109,53,19,0.08)]">
+      <div className="mb-3 inline-flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary">
         {icon}
       </div>
       <h2 className="font-semibold text-foreground">{titulo}</h2>
@@ -125,10 +125,10 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-28 pt-8 sm:px-6">
-      <section className="overflow-hidden rounded-[36px] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(15,118,110,0.18),_transparent_34%),radial-gradient(circle_at_right,_rgba(251,191,36,0.22),_transparent_28%),linear-gradient(180deg,rgba(255,251,239,1),rgba(255,255,255,1))] p-6 shadow-sm sm:p-8">
+      <section className="overflow-hidden rounded-[36px] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(183,86,24,0.26),_transparent_34%),radial-gradient(circle_at_right,_rgba(84,128,54,0.18),_transparent_28%),linear-gradient(180deg,rgba(255,249,239,1),rgba(255,241,216,1))] p-6 shadow-[0_24px_60px_rgba(117,54,20,0.12)] sm:p-8">
         <div className="max-w-3xl space-y-5">
-          <Badge variant="secondary" className="w-fit">
-            Pedido rapido, PWA e localizacao fixa
+          <Badge variant="secondary" className="w-fit bg-primary/10 text-primary">
+            Acaraje, cupons e pedido rapido
           </Badge>
           <div className="space-y-3">
             <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
@@ -141,9 +141,10 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">Carrinho persistente</Badge>
-            <Badge variant="outline">Instalavel no celular</Badge>
-            <Badge variant="outline">{itensNoCarrinho} item(ns) no carrinho</Badge>
+            <Badge variant="outline" className="bg-background/70">Carrinho persistente</Badge>
+            <Badge variant="outline" className="bg-background/70">Cupons no checkout</Badge>
+            <Badge variant="outline" className="bg-background/70">Instalavel no celular</Badge>
+            <Badge variant="outline" className="bg-background/70">{itensNoCarrinho} item(ns) no carrinho</Badge>
           </div>
         </div>
       </section>

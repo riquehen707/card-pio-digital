@@ -17,3 +17,6 @@ export type LocalizacaoSalva = {
   atualizadaEm: string
 }
 
+export type CupomSalvo = {
+  codigo: string
+}

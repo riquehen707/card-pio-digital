@@ -2,16 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Drawer } from "vaul"
-import { Loader2, MapPin, Send, Trash2, X } from "lucide-react"
+import { CheckCircle2, Loader2, MapPin, Send, TicketPercent, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useAnalytics } from "@/components/AnalyticsProvider"
 import { agruparItens } from "@/features/carrinho/agruparItens"
 import { calcularPrecoEntrega } from "@/features/carrinho/calcularEntrega"
 import { useCarrinho } from "@/hooks/useCarrinho"
+import { AVAILABLE_COUPONS, evaluateCoupon, normalizeCouponCode } from "@/lib/coupons"
 import {
   criarLinkGoogleMaps,
   extrairCoordenadasDoLink,
@@ -64,14 +66,18 @@ export function CartDrawer() {
   const hidratado = useCarrinho((state) => state.hidratado)
   const itens = useCarrinho((state) => state.itens)
   const localizacaoFixa = useCarrinho((state) => state.localizacaoFixa)
+  const cupomSalvo = useCarrinho((state) => state.cupom)
   const removerItem = useCarrinho((state) => state.removerItem)
   const limparCarrinho = useCarrinho((state) => state.limparCarrinho)
   const salvarLocalizacao = useCarrinho((state) => state.salvarLocalizacao)
   const limparLocalizacao = useCarrinho((state) => state.limparLocalizacao)
+  const aplicarCupom = useCarrinho((state) => state.aplicarCupom)
+  const limparCupom = useCarrinho((state) => state.limparCupom)
   const { sessionId, trackEvent } = useAnalytics()
 
   const [aberto, setAberto] = useState(false)
   const [linkAlternativo, setLinkAlternativo] = useState("")
+  const [cupomInput, setCupomInput] = useState("")
   const [geoLoading, setGeoLoading] = useState(false)
   const [permissaoLocalizacao, setPermissaoLocalizacao] = useState<EstadoPermissao>("unsupported")
 
@@ -104,6 +110,10 @@ export function CartDrawer() {
     }
   }, [])
 
+  useEffect(() => {
+    setCupomInput(cupomSalvo?.codigo ?? "")
+  }, [cupomSalvo?.codigo])
+
   const grupos = useMemo(() => agruparItens(itens), [itens])
   const subtotal = useMemo(
     () => grupos.reduce((total, grupo) => total + grupo.precoUnitario * grupo.quantidade, 0),
@@ -128,7 +138,16 @@ export function CartDrawer() {
     () => (localizacaoAtiva ? calcularPrecoEntrega(localizacaoAtiva.coordenadas) : null),
     [localizacaoAtiva]
   )
-  const total = subtotal + (entrega?.preco ?? 0)
+
+  const avaliacaoCupom = useMemo(() => {
+    if (!cupomSalvo?.codigo) return null
+    return evaluateCoupon(cupomSalvo.codigo, subtotal)
+  }, [cupomSalvo?.codigo, subtotal])
+
+  const statusCupom =
+    avaliacaoCupom && avaliacaoCupom.status !== "invalid" ? avaliacaoCupom : null
+  const desconto = avaliacaoCupom?.status === "applied" ? avaliacaoCupom.discount : 0
+  const total = Math.max(subtotal + (entrega?.preco ?? 0) - desconto, 0)
 
   async function solicitarLocalizacaoAtual() {
     if (typeof window === "undefined") return null
@@ -193,6 +212,39 @@ export function CartDrawer() {
     toast.success("Link salvo como localizacao fixa.")
   }
 
+  function aplicarCodigoCupom(codigo = cupomInput) {
+    const normalizedCode = normalizeCouponCode(codigo)
+
+    if (!normalizedCode) {
+      toast.error("Digite um cupom antes de aplicar.")
+      return
+    }
+
+    const avaliacao = evaluateCoupon(normalizedCode, subtotal)
+
+    if (avaliacao.status === "invalid" || avaliacao.status === "ineligible") {
+      toast.error(avaliacao.message)
+      return
+    }
+
+    aplicarCupom({ codigo: avaliacao.normalizedCode })
+    setCupomInput(avaliacao.normalizedCode)
+    void trackEvent({
+      type: "coupon_applied",
+      value: avaliacao.discount,
+      metadata: {
+        code: avaliacao.normalizedCode,
+      },
+    })
+    toast.success(avaliacao.message)
+  }
+
+  function removerCupomAplicado() {
+    limparCupom()
+    setCupomInput("")
+    toast.success("Cupom removido do pedido.")
+  }
+
   async function enviarPedido() {
     if (linkAlternativoInvalido) {
       toast.error("Cole um link valido do Google Maps ou use sua localizacao fixa.")
@@ -210,7 +262,10 @@ export function CartDrawer() {
     }
 
     const entregaAtual = calcularPrecoEntrega(localizacaoParaPedido.coordenadas)
-    const totalAtual = subtotal + entregaAtual.preco
+    const avaliacaoCupomAtual =
+      cupomSalvo?.codigo ? evaluateCoupon(cupomSalvo.codigo, subtotal) : null
+    const descontoAtual = avaliacaoCupomAtual?.status === "applied" ? avaliacaoCupomAtual.discount : 0
+    const totalAtual = Math.max(subtotal + entregaAtual.preco - descontoAtual, 0)
 
     const linhas = [
       "Ola! Gostaria de fazer um pedido:",
@@ -223,6 +278,13 @@ export function CartDrawer() {
       ),
       "",
       `Subtotal: ${BRL.format(subtotal)}`,
+      ...(descontoAtual > 0 && avaliacaoCupomAtual?.status === "applied"
+        ? [
+            `Cupom ${avaliacaoCupomAtual.coupon.code} (${avaliacaoCupomAtual.coupon.label}): -${BRL.format(
+              descontoAtual
+            )}`,
+          ]
+        : []),
       `Entrega: ${BRL.format(entregaAtual.preco)}`,
       `Total: ${BRL.format(totalAtual)}`,
       "",
@@ -238,6 +300,11 @@ export function CartDrawer() {
       body: JSON.stringify({
         sessionId,
         subtotal,
+        discountAmount: descontoAtual,
+        couponCode:
+          avaliacaoCupomAtual?.status === "applied" ? avaliacaoCupomAtual.coupon.code : null,
+        couponLabel:
+          avaliacaoCupomAtual?.status === "applied" ? avaliacaoCupomAtual.coupon.label : null,
         deliveryFee: entregaAtual.preco,
         total: totalAtual,
         whatsappNumber: WHATSAPP_NUMBER,
@@ -259,6 +326,8 @@ export function CartDrawer() {
       value: totalAtual,
       metadata: {
         items: grupos.length,
+        couponCode:
+          avaliacaoCupomAtual?.status === "applied" ? avaliacaoCupomAtual.coupon.code : null,
       },
     })
 
@@ -275,7 +344,7 @@ export function CartDrawer() {
       <Drawer.Trigger asChild>
         <button
           type="button"
-          className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-xl shadow-primary/20 transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--primary),rgba(246,187,88,1))] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-xl shadow-primary/30 transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <span>Carrinho</span>
           <Badge variant="secondary">{itens.length}</Badge>
@@ -285,7 +354,7 @@ export function CartDrawer() {
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" />
 
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88vh] flex-col rounded-t-[32px] border border-border bg-background px-4 pb-4 pt-3 shadow-2xl sm:mx-auto sm:max-w-2xl sm:px-6 sm:pb-6">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88vh] flex-col rounded-t-[32px] border border-border bg-[linear-gradient(180deg,rgba(255,249,238,1),rgba(254,245,225,0.96))] px-4 pb-4 pt-3 shadow-2xl sm:mx-auto sm:max-w-2xl sm:px-6 sm:pb-6">
           <Drawer.Title className="sr-only">Seu pedido</Drawer.Title>
 
           <div className="mb-4 flex items-center justify-between gap-3 border-b border-border pb-4">
@@ -347,7 +416,7 @@ export function CartDrawer() {
               </ul>
             </section>
 
-            <section className="rounded-[28px] border border-border bg-card/80 p-4">
+            <section className="rounded-[28px] border border-border bg-card/85 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h3 className="font-semibold text-foreground">Localizacao do pedido</h3>
@@ -433,7 +502,85 @@ export function CartDrawer() {
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-border bg-card/80 p-4">
+            <section className="rounded-[28px] border border-border bg-card/85 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold text-foreground">Cupom de desconto</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Digite um codigo promocional para abater no subtotal.
+                  </p>
+                </div>
+                <Badge variant="secondary">
+                  <TicketPercent className="size-3.5" />
+                  Promo
+                </Badge>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  value={cupomInput}
+                  onChange={(event) => setCupomInput(event.target.value.toUpperCase())}
+                  placeholder="Ex.: DENDE10"
+                  className="bg-background/90"
+                />
+                <Button onClick={() => aplicarCodigoCupom()} className="rounded-2xl sm:w-auto">
+                  Aplicar
+                </Button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {AVAILABLE_COUPONS.map((cupom) => (
+                  <button
+                    key={cupom.code}
+                    type="button"
+                    onClick={() => aplicarCodigoCupom(cupom.code)}
+                    className="inline-flex items-center rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-accent"
+                  >
+                    {cupom.code}
+                  </button>
+                ))}
+              </div>
+
+              {statusCupom ? (
+                <div
+                  className={`mt-4 rounded-3xl border px-4 py-3 ${
+                    statusCupom.status === "applied"
+                      ? "border-emerald-300/70 bg-emerald-50/80"
+                      : "border-amber-300/70 bg-amber-50/80"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        {statusCupom.status === "applied" ? (
+                          <CheckCircle2 className="size-4 text-emerald-700" />
+                        ) : (
+                          <TicketPercent className="size-4 text-amber-700" />
+                        )}
+                        <span className="font-medium text-foreground">
+                          {statusCupom.status === "applied"
+                            ? `${statusCupom.coupon.code} ativo`
+                            : `${statusCupom.coupon.code} aguardando subtotal`}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{statusCupom.coupon.description}</p>
+                      <p className="text-sm font-medium text-foreground">{statusCupom.message}</p>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={removerCupomAplicado}
+                      className="rounded-full"
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+
+            <section className="rounded-[28px] border border-border bg-card/85 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h3 className="font-semibold text-foreground">Resumo</h3>
                 {entrega ? (
@@ -447,6 +594,12 @@ export function CartDrawer() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium text-foreground">{BRL.format(subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Desconto</span>
+                  <span className="font-medium text-foreground">
+                    {desconto > 0 ? `-${BRL.format(desconto)}` : "Sem cupom ativo"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Entrega</span>
