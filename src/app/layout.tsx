@@ -104,22 +104,43 @@ export default function RootLayout({
 
             <div>{children}</div>
 
-            <footer className="border-t border-border/70 bg-[linear-gradient(180deg,rgba(255,247,232,0.86),rgba(246,230,195,0.86))]">
-              <div className="brand-pattern-strip h-4 w-full opacity-90" />
+            <footer className="border-t border-border/60 bg-[linear-gradient(180deg,rgba(255,249,241,0.92),rgba(252,243,224,0.88))]">
+              <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+                <div className="grid gap-8 border-t border-border/60 pt-8 sm:grid-cols-[1.3fr_0.7fr] sm:gap-12 sm:pt-10">
+                  <div className="max-w-xl space-y-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
+                      {SITE_NAME}
+                    </p>
+                    <p className="text-sm leading-7 text-muted-foreground sm:text-base">
+                      Pedido rápido pelo WhatsApp, localização salva e um fluxo direto para montar
+                      o pedido sem ruído.
+                    </p>
+                    <p className="text-xs text-muted-foreground/90 sm:text-sm">
+                      {new Date().getFullYear()} {SITE_NAME}.
+                    </p>
+                  </div>
 
-              <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-5">
-                <div className="flex flex-col gap-4 rounded-[26px] border border-border/70 bg-background/60 px-4 py-4 text-muted-foreground shadow-[0_16px_36px_rgba(95,42,15,0.06)] sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <BrandMark size="sm" hideCaption />
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/70">
-                        {SITE_NAME}
+                  <div className="space-y-4 sm:justify-self-end sm:text-right">
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
+                        Contato
                       </p>
-                      <p className="text-xs leading-5 sm:text-sm">
-                        {new Date().getFullYear()} {SITE_NAME}. Pedido rápido pelo WhatsApp.
+                      <a
+                        href={INSTAGRAM_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground sm:justify-end"
+                      >
+                        <Instagram className="size-4" />
+                        {INSTAGRAM_HANDLE}
+                      </a>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
+                        Créditos
                       </p>
-                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] sm:text-xs">
-                        <span>site por</span>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground sm:justify-end">
                         <a
                           href={DEV_URL}
                           target="_blank"
@@ -128,29 +149,17 @@ export default function RootLayout({
                         >
                           {DEV_HANDLE}
                         </a>
-                        <span>/</span>
                         <a
                           href={DEV_SITE_URL}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 transition hover:text-foreground"
                         >
-                          <Globe className="size-3" />
+                          <Globe className="size-4" />
                           {DEV_SITE_LABEL}
                         </a>
-                      </p>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:justify-end sm:text-sm">
-                    <a
-                      href={INSTAGRAM_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="transition hover:text-foreground"
-                    >
-                      {INSTAGRAM_HANDLE}
-                    </a>
                   </div>
                 </div>
               </div>
