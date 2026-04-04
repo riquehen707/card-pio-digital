@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import type { Metadata, Viewport } from "next"
 import Script from "next/script"
-import { Globe, Instagram } from "lucide-react"
+import { Clock3, Globe, Instagram } from "lucide-react"
 import { Toaster } from "sonner"
 
 import "./globals.css"
@@ -11,6 +11,7 @@ import { BrandMark } from "@/components/BrandMark"
 import { GoogleAdsPageView } from "@/components/GoogleAdsPageView"
 import PwaInstallPrompt from "@/components/PwaInstallPrompt"
 import {
+  BUSINESS_HOURS,
   DEV_HANDLE,
   DEV_SITE_LABEL,
   DEV_SITE_URL,
@@ -124,6 +125,10 @@ export default function RootLayout({
                     <div className="space-y-2">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
                         Contato
+                      </p>
+                      <p className="inline-flex items-center gap-2 text-sm text-muted-foreground sm:justify-end">
+                        <Clock3 className="size-4" />
+                        {BUSINESS_HOURS}
                       </p>
                       <a
                         href={INSTAGRAM_URL}

@@ -7,6 +7,7 @@ export const SITE_URL = "https://acarajedajosi.com.br"
 
 export const INSTAGRAM_URL = "https://instagram.com/acarajosi"
 export const INSTAGRAM_HANDLE = "@acarajosi"
+export const BUSINESS_HOURS = "17h30 às 21h30, todos os dias da semana"
 
 export const DEV_URL = "https://instagram.com/riquehen"
 export const DEV_HANDLE = "@riquehen"
