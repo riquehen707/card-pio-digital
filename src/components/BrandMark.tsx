@@ -11,7 +11,7 @@ type BrandMarkProps = {
 
 const sizeMap = {
   sm: {
-    image: "w-[104px] sm:w-[124px]",
+    image: "w-[88px] sm:w-[104px]",
     eyebrow: "text-[10px]",
     tagline: "text-xs",
   },
@@ -49,7 +49,7 @@ export function BrandMark({
             ? "(max-width: 640px) 260px, (max-width: 1024px) 340px, 420px"
             : size === "md"
               ? "(max-width: 640px) 156px, 188px"
-              : "(max-width: 640px) 104px, 124px"
+              : "(max-width: 640px) 88px, 104px"
         }
       />
 

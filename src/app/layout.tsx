@@ -86,7 +86,7 @@ export default function RootLayout({
               <div className="brand-pattern-strip h-4 w-full opacity-95" />
 
               <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
-                <BrandMark size="sm" hideCaption className="min-w-0" />
+                <BrandMark size="sm" hideCaption className="min-w-0 opacity-90" />
 
                 <div className="flex flex-wrap items-center gap-2">
                   <a
