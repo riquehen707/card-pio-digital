@@ -9,6 +9,9 @@ export const INSTAGRAM_HANDLE = "@acarajosi"
 export const DEV_URL = "https://instagram.com/riquehen"
 export const DEV_HANDLE = "@riquehen"
 export const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || "AW-18064251939"
+export const GOOGLE_ADS_WHATSAPP_CONVERSION_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_WHATSAPP_CONVERSION_ID ||
+  "AW-18064251939/B5npCN2z25UcEKO42qVD"
 export const WHATSAPP_NUMBER =
   process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "") || "5575983675164"
 

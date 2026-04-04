@@ -12,6 +12,7 @@ import { useAnalytics } from "@/components/AnalyticsProvider"
 import { agruparItens } from "@/features/carrinho/agruparItens"
 import { calcularPrecoEntrega } from "@/features/carrinho/calcularEntrega"
 import { useCarrinho } from "@/hooks/useCarrinho"
+import { reportGoogleAdsConversion } from "@/lib/googleAds"
 import {
   criarLinkGoogleMaps,
   extrairCoordenadasDoLink,
@@ -257,6 +258,8 @@ export function CartDrawer() {
       }),
     }).catch(() => undefined)
 
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(linhas.join("\n"))}`
+
     void trackEvent({
       type: "whatsapp_checkout_clicked",
       value: totalAtual,
@@ -265,8 +268,14 @@ export function CartDrawer() {
       },
     })
 
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(linhas.join("\n"))}`
-    window.open(url, "_blank", "noopener,noreferrer")
+    reportGoogleAdsConversion({
+      value: totalAtual,
+      currency: "BRL",
+      transactionId: `${sessionId ?? "guest"}-${Date.now()}`,
+      onComplete: () => {
+        window.location.href = url
+      },
+    })
   }
 
   if (!hidratado || itens.length === 0) {
