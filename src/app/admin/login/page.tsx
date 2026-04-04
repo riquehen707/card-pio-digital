@@ -21,7 +21,7 @@ export default async function AdminLoginPage({
             Entrar no painel
           </h1>
           <p className="text-sm text-muted-foreground">
-            Use a senha definida em <code>ADMIN_PASSWORD</code> para acessar os dados do negocio.
+            Use a senha definida em <code>ADMIN_PASSWORD</code> para acessar os dados do negócio.
           </p>
         </div>
 
@@ -37,7 +37,7 @@ export default async function AdminLoginPage({
           </label>
 
           {invalidCredentials ? (
-            <p className="text-sm text-destructive">Senha invalida.</p>
+            <p className="text-sm text-destructive">Senha inválida.</p>
           ) : null}
 
           <button
@@ -51,4 +51,3 @@ export default async function AdminLoginPage({
     </main>
   )
 }
-

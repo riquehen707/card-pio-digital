@@ -16,7 +16,3 @@ export type LocalizacaoSalva = {
   origem: "gps" | "manual"
   atualizadaEm: string
 }
-
-export type CupomSalvo = {
-  codigo: string
-}

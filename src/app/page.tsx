@@ -128,22 +128,21 @@ export default function Home() {
       <section className="overflow-hidden rounded-[36px] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(183,86,24,0.26),_transparent_34%),radial-gradient(circle_at_right,_rgba(84,128,54,0.18),_transparent_28%),linear-gradient(180deg,rgba(255,249,239,1),rgba(255,241,216,1))] p-6 shadow-[0_24px_60px_rgba(117,54,20,0.12)] sm:p-8">
         <div className="max-w-3xl space-y-5">
           <Badge variant="secondary" className="w-fit bg-primary/10 text-primary">
-            Acaraje, cupons e pedido rapido
+            Acarajé, PWA e pedido rápido
           </Badge>
           <div className="space-y-3">
             <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
               {SITE_NAME}
             </h1>
             <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Escolha seus itens, salve sua localizacao uma vez e envie o pedido pelo WhatsApp
+              Escolha seus itens, salve sua localização uma vez e envie o pedido pelo WhatsApp
               com a taxa de entrega calculada automaticamente.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="bg-background/70">Carrinho persistente</Badge>
-            <Badge variant="outline" className="bg-background/70">Cupons no checkout</Badge>
-            <Badge variant="outline" className="bg-background/70">Instalavel no celular</Badge>
+            <Badge variant="outline" className="bg-background/70">Instalável no celular</Badge>
             <Badge variant="outline" className="bg-background/70">{itensNoCarrinho} item(ns) no carrinho</Badge>
           </div>
         </div>
@@ -151,18 +150,18 @@ export default function Home() {
 
       <section className="grid gap-4 md:grid-cols-3">
         <HeroCard
-          titulo="Peca em poucos passos"
-          descricao="O fluxo foi simplificado para sair do cardapio ao WhatsApp sem perder o contexto."
+          titulo="Peça em poucos passos"
+          descricao="O fluxo foi simplificado para sair do cardápio ao WhatsApp sem perder o contexto."
           icon={<ShoppingBag className="size-5" />}
         />
         <HeroCard
-          titulo="Entrega calculada por distancia"
-          descricao="A taxa usa a localizacao fixa salva ou um link alternativo do Google Maps."
+          titulo="Entrega calculada por distância"
+          descricao="A taxa usa a localização fixa salva ou um link alternativo do Google Maps."
           icon={<Truck className="size-5" />}
         />
         <HeroCard
           titulo="Pronto para instalar"
-          descricao="O site agora pode funcionar como app no celular, com suporte offline basico."
+          descricao="O site agora pode funcionar como app no celular, com suporte offline básico."
           icon={<Smartphone className="size-5" />}
         />
       </section>

@@ -50,7 +50,7 @@ export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Pro
   if (grupos.length === 0) {
     return (
       <div className="rounded-[28px] border border-dashed border-border bg-card/60 p-8 text-center text-sm text-muted-foreground">
-        Nenhum produto disponivel no momento.
+        Nenhum produto disponível no momento.
       </div>
     )
   }
@@ -74,7 +74,7 @@ export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Pro
           <div>
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">{categoria}</h2>
             <p className="text-sm text-muted-foreground">
-              {itens.length} {itens.length === 1 ? "item" : "itens"} nesta secao
+              {itens.length} {itens.length === 1 ? "item" : "itens"} nesta seção
             </p>
             <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-primary/70 sm:hidden">
               Arraste para navegar

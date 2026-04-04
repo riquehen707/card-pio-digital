@@ -1,0 +1,24 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1200" rx="96" fill="#FFF6E8"/>
+  <circle cx="976" cy="214" r="210" fill="#F2C468" fill-opacity="0.32"/>
+  <circle cx="188" cy="220" r="156" fill="#D44F1C" fill-opacity="0.14"/>
+  <circle cx="204" cy="1036" r="228" fill="#B03A1B" fill-opacity="0.12"/>
+  <rect x="448" y="150" width="304" height="860" rx="126" fill="url(#paint0_linear_708_6)"/>
+  <rect x="488" y="194" width="224" height="774" rx="94" fill="#FFFDF7" fill-opacity="0.72"/>
+  <rect x="482" y="302" width="236" height="146" rx="40" fill="#D2441E"/>
+  <path d="M482 516H718V736C718 786.81 676.81 828 626 828H574C523.19 828 482 786.81 482 736V516Z" fill="#F4D584"/>
+  <path d="M520 560H680V662C680 701.765 647.765 734 608 734H592C552.235 734 520 701.765 520 662V560Z" fill="#9F1E17"/>
+  <text x="600" y="391" fill="#FFF8F0" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="700" text-anchor="middle">ITAIPAVA</text>
+  <text x="600" y="634" fill="#FFF5E6" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="700" text-anchor="middle">LATÃO</text>
+  <text x="600" y="686" fill="#F4D584" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" text-anchor="middle">550 ML</text>
+  <text x="600" y="1112" fill="#96351D" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="700" text-anchor="middle">Itaipava</text>
+  <text x="600" y="1166" fill="#B36B46" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="500" text-anchor="middle">Latão 550 ml</text>
+  <defs>
+    <linearGradient id="paint0_linear_708_6" x1="600" y1="150" x2="600" y2="1010" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F1B52C"/>
+      <stop offset="0.35" stop-color="#FFF4CF"/>
+      <stop offset="0.7" stop-color="#D88A16"/>
+      <stop offset="1" stop-color="#B86115"/>
+    </linearGradient>
+  </defs>
+</svg>

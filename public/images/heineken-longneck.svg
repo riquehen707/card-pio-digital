@@ -1,0 +1,21 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1200" rx="96" fill="#F7F4E9"/>
+  <circle cx="1016" cy="234" r="212" fill="#D75B1C" fill-opacity="0.14"/>
+  <circle cx="216" cy="976" r="232" fill="#6B9C57" fill-opacity="0.16"/>
+  <path d="M543 174C543 148.595 563.595 128 589 128H611C636.405 128 657 148.595 657 174V286H543V174Z" fill="#1C5B34"/>
+  <path d="M484 286C484 260.595 504.595 240 530 240H670C695.405 240 716 260.595 716 286V404C716 430.18 708.473 455.808 694.326 477.837L648.363 549.424C635.654 569.221 628.909 592.267 628.909 615.793V920C628.909 947.019 607.019 968.909 580 968.909H620C592.981 968.909 571.091 947.019 571.091 920V615.793C571.091 592.267 564.346 569.221 551.637 549.424L505.674 477.837C491.527 455.808 484 430.18 484 404V286Z" fill="url(#paint0_linear_708_4)"/>
+  <path d="M515 330H685V420C685 440.24 679.18 460.053 668.236 477.05L633.817 530.506C617.382 556.025 608.636 585.758 608.636 616.113V886C608.636 914.167 585.803 937 557.636 937H642.364C614.197 937 591.364 914.167 591.364 886V616.113C591.364 585.758 582.618 556.025 566.183 530.506L531.764 477.05C520.82 460.053 515 440.24 515 420V330Z" fill="#15532F"/>
+  <ellipse cx="600" cy="570" rx="118" ry="156" fill="#F8F3E3"/>
+  <ellipse cx="600" cy="570" rx="92" ry="126" fill="#F3E3BB"/>
+  <text x="600" y="540" fill="#1F4026" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="700" text-anchor="middle">HEINEKEN</text>
+  <text x="600" y="602" fill="#C5382D" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" text-anchor="middle">★</text>
+  <text x="600" y="1112" fill="#295437" font-family="Arial, Helvetica, sans-serif" font-size="74" font-weight="700" text-anchor="middle">Heineken</text>
+  <text x="600" y="1164" fill="#658168" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="500" text-anchor="middle">Long Neck 330 ml</text>
+  <defs>
+    <linearGradient id="paint0_linear_708_4" x1="600" y1="240" x2="600" y2="968.909" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2A7C45"/>
+      <stop offset="0.6" stop-color="#1A6037"/>
+      <stop offset="1" stop-color="#0D3F22"/>
+    </linearGradient>
+  </defs>
+</svg>

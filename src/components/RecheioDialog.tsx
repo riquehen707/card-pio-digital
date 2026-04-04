@@ -51,7 +51,7 @@ export default function RecheioDialog({ aberto, produto, onConfirmar, onClose }:
         <DialogHeader>
           <DialogTitle>Escolha os recheios de {produto.nome}</DialogTitle>
           <DialogDescription>
-            Se preferir, voce tambem pode confirmar sem recheios e seguir direto para o carrinho.
+            Se preferir, você também pode confirmar sem recheios e seguir direto para o carrinho.
           </DialogDescription>
         </DialogHeader>
 

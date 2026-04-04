@@ -87,7 +87,7 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
           <div className="absolute left-2 top-2 flex max-w-[calc(100%-3rem)] flex-wrap gap-1.5 sm:left-3 sm:top-3 sm:max-w-[calc(100%-3.5rem)] sm:gap-2">
             {produto.permiteRecheios ? (
               <Badge variant="secondary" className="px-2 py-0.5 text-[10px] sm:px-3 sm:py-1 sm:text-xs">
-                Personalizavel
+                Personalizável
               </Badge>
             ) : null}
             {added ? <Badge variant="success">Adicionado</Badge> : null}
@@ -96,7 +96,7 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
           {indisponivel ? (
             <div className="absolute inset-0 grid place-items-center bg-black/45">
               <Badge variant="outline" className="border-white/40 bg-black/35 text-white">
-                Indisponivel
+                Indisponível
               </Badge>
             </div>
           ) : null}

@@ -3,7 +3,7 @@ import type { Produto } from "@/types/produto"
 export const produtos: Produto[] = [
   {
     id: "acaraje",
-    nome: "Acaraje",
+    nome: "Acarajé",
     preco: 15,
     categoria: "Comidas",
     imagem: "/images/acaraje.jpeg",
@@ -11,7 +11,7 @@ export const produtos: Produto[] = [
   },
   {
     id: "abara",
-    nome: "Abara",
+    nome: "Abará",
     preco: 15,
     categoria: "Comidas",
     imagem: "/images/abara.jpg",
@@ -19,7 +19,7 @@ export const produtos: Produto[] = [
   },
   {
     id: "acaraje-gigante",
-    nome: "Acaraje Gigante",
+    nome: "Acarajé Gigante",
     preco: 40,
     categoria: "Comidas",
     imagem: "/images/acaraje-gigante.jpg",
@@ -41,7 +41,7 @@ export const produtos: Produto[] = [
   },
   {
     id: "guarana-lata",
-    nome: "Guarana Antartica (lata)",
+    nome: "Guaraná Antarctica (lata)",
     preco: 5,
     categoria: "Bebidas",
     imagem: "/images/guarana-antartica.jpeg",
@@ -62,7 +62,7 @@ export const produtos: Produto[] = [
   },
   {
     id: "guarana-1l",
-    nome: "Guarana Antartica (1L)",
+    nome: "Guaraná Antarctica (1L)",
     preco: 8,
     categoria: "Bebidas",
     imagem: "/images/guarana1l.jpeg",
@@ -72,18 +72,20 @@ export const produtos: Produto[] = [
     nome: "Heineken Long Neck (330 ml)",
     preco: 10,
     categoria: "Bebidas",
+    imagem: "/images/heineken-longneck.svg",
   },
   {
     id: "itaipava-latao-550ml",
-    nome: "Itaipava Latao 550 ml",
+    nome: "Itaipava Latão 550 ml",
     preco: 9,
     categoria: "Bebidas",
+    imagem: "/images/itaipava-latao.svg",
   },
   {
     id: "amstel-lata-350ml",
     nome: "Amstel (lata 350 ml)",
     preco: 8,
     categoria: "Bebidas",
+    imagem: "/images/amstel-lata.svg",
   },
 ]
-

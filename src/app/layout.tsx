@@ -61,7 +61,7 @@ export default function RootLayout({
                     Cardapio digital
                   </p>
                   <div className="text-xl font-semibold tracking-tight text-foreground">{SITE_NAME}</div>
-                  <p className="text-xs text-muted-foreground">Dende, pimenta e pedido rapido.</p>
+                  <p className="text-xs text-muted-foreground">Dendê, pimenta e pedido rápido.</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -82,7 +82,7 @@ export default function RootLayout({
 
             <footer className="border-t border-border/70 bg-[linear-gradient(180deg,rgba(255,247,232,0.86),rgba(246,230,195,0.86))]">
               <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-muted-foreground sm:px-6 sm:flex-row sm:items-center sm:justify-between">
-                <p>{new Date().getFullYear()} {SITE_NAME}. Pedido rapido pelo WhatsApp.</p>
+                <p>{new Date().getFullYear()} {SITE_NAME}. Pedido rápido pelo WhatsApp.</p>
                 <a
                   href={DEV_URL}
                   target="_blank"

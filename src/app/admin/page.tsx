@@ -57,13 +57,17 @@ export default async function AdminPage() {
           <div>
             <h1 className="text-4xl font-semibold tracking-tight text-foreground">Painel de dados</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Funil de navegacao, leads disparados via WhatsApp, campanhas UTM e dados diarios do
+              Funil de navegação, leads disparados via WhatsApp, campanhas UTM e dados diários do
               Google Ads.
             </p>
           </div>
           <p className="text-sm text-muted-foreground">
-            Ultimo sync Google Ads:{" "}
-            <span className="font-medium text-foreground">{formatDateTime(data.latestSyncRun?.finishedAt ?? data.latestSyncRun?.startedAt ?? null)}</span>
+            Último sync Google Ads:{" "}
+            <span className="font-medium text-foreground">
+              {formatDateTime(
+                data.latestSyncRun?.finishedAt ?? data.latestSyncRun?.startedAt ?? null
+              )}
+            </span>
           </p>
         </div>
 
@@ -91,7 +95,7 @@ export default async function AdminPage() {
         <MetricCard
           label="Leads em 30 dias"
           value={NUMBER.format(data.summary.totalLeads)}
-          helper={`${NUMBER.format(data.summary.totalSessions)} sessoes iniciadas`}
+          helper={`${NUMBER.format(data.summary.totalSessions)} sessões iniciadas`}
         />
         <MetricCard
           label="Receita estimada"
@@ -108,7 +112,7 @@ export default async function AdminPage() {
           value={BRL.format(data.summary.googleAdsSpend)}
           helper={`${NUMBER.format(data.summary.googleAdsClicks)} cliques e ${NUMBER.format(
             data.summary.googleAdsImpressions
-          )} impressoes`}
+          )} impressões`}
         />
       </section>
 
@@ -116,8 +120,10 @@ export default async function AdminPage() {
         <div className="rounded-[32px] border border-border bg-card p-5 shadow-sm">
           <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Serie diaria</h2>
-              <p className="text-sm text-muted-foreground">Ultimos 14 dias de leads e investimento.</p>
+              <h2 className="text-xl font-semibold text-foreground">Série diária</h2>
+              <p className="text-sm text-muted-foreground">
+                Últimos 14 dias de leads e investimento.
+              </p>
             </div>
           </div>
           <div className="space-y-3">
@@ -126,13 +132,17 @@ export default async function AdminPage() {
               const width = `${Math.max((row.revenue / maxRevenue) * 100, row.revenue > 0 ? 8 : 0)}%`
 
               return (
-                <div key={row.day} className="grid gap-2 rounded-2xl border border-border bg-background p-3 lg:grid-cols-[96px_1fr_auto] lg:items-center">
+                <div
+                  key={row.day}
+                  className="grid gap-2 rounded-2xl border border-border bg-background p-3 lg:grid-cols-[96px_1fr_auto] lg:items-center"
+                >
                   <div className="text-sm font-medium text-foreground">{row.day}</div>
                   <div className="h-3 rounded-full bg-secondary">
                     <div className="h-3 rounded-full bg-primary" style={{ width }} />
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
-                    {row.leads} lead(s) · {BRL.format(row.revenue)} · Ads {BRL.format(row.adSpend)}
+                    {row.leads} lead(s) • {BRL.format(row.revenue)} • Ads{" "}
+                    {BRL.format(row.adSpend)}
                   </div>
                 </div>
               )
@@ -143,17 +153,17 @@ export default async function AdminPage() {
         <div className="rounded-[32px] border border-border bg-card p-5 shadow-sm">
           <h2 className="text-xl font-semibold text-foreground">Sync Google Ads</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Status mais recente da rotina de sincronizacao.
+            Status mais recente da rotina de sincronização.
           </p>
           <div className="mt-5 space-y-3 text-sm">
             <div className="rounded-2xl border border-border bg-background p-4">
               <p className="text-muted-foreground">Status</p>
               <p className="mt-1 font-medium text-foreground">
-                {data.latestSyncRun?.status ?? "Sem execucoes"}
+                {data.latestSyncRun?.status ?? "Sem execuções"}
               </p>
             </div>
             <div className="rounded-2xl border border-border bg-background p-4">
-              <p className="text-muted-foreground">Inicio</p>
+              <p className="text-muted-foreground">Início</p>
               <p className="mt-1 font-medium text-foreground">
                 {formatDateTime(data.latestSyncRun?.startedAt ?? null)}
               </p>
@@ -191,10 +201,14 @@ export default async function AdminPage() {
                   <tr key={product.productId} className="border-t border-border bg-background">
                     <td className="px-4 py-3">
                       <div className="font-medium text-foreground">{product.productName}</div>
-                      <div className="text-xs text-muted-foreground">{product.category || "Sem categoria"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {product.category || "Sem categoria"}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-foreground">{NUMBER.format(product.quantity)}</td>
-                    <td className="px-4 py-3 text-foreground">{NUMBER.format(product.leadCount)}</td>
+                    <td className="px-4 py-3 text-foreground">
+                      {NUMBER.format(product.leadCount)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -215,7 +229,10 @@ export default async function AdminPage() {
               </thead>
               <tbody>
                 {data.campaigns.map((campaign) => (
-                  <tr key={`${campaign.source}-${campaign.medium}-${campaign.campaign}`} className="border-t border-border bg-background">
+                  <tr
+                    key={`${campaign.source}-${campaign.medium}-${campaign.campaign}`}
+                    className="border-t border-border bg-background"
+                  >
                     <td className="px-4 py-3">
                       <div className="font-medium text-foreground">{campaign.source}</div>
                       <div className="text-xs text-muted-foreground">{campaign.medium}</div>
@@ -248,7 +265,8 @@ export default async function AdminPage() {
                     <td className="px-4 py-3">
                       <div className="font-medium text-foreground">{campaign.campaignName}</div>
                       <div className="text-xs text-muted-foreground">
-                        {NUMBER.format(campaign.impressions)} impressoes · {NUMBER.format(campaign.conversions)} conversoes
+                        {NUMBER.format(campaign.impressions)} impressões •{" "}
+                        {NUMBER.format(campaign.conversions)} conversões
                       </div>
                     </td>
                     <td className="px-4 py-3 text-foreground">{NUMBER.format(campaign.clicks)}</td>
@@ -261,14 +279,16 @@ export default async function AdminPage() {
         </div>
 
         <div className="rounded-[32px] border border-border bg-card p-5 shadow-sm">
-          <h2 className="text-xl font-semibold text-foreground">Ultimos leads</h2>
+          <h2 className="text-xl font-semibold text-foreground">Últimos leads</h2>
           <div className="mt-4 space-y-3">
             {data.latestLeads.map((lead) => (
               <div key={lead.id} className="rounded-3xl border border-border bg-background p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-medium text-foreground">{BRL.format(lead.total)}</p>
-                    <p className="text-sm text-muted-foreground">{formatDateTime(lead.createdAt)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDateTime(lead.createdAt)}
+                    </p>
                   </div>
                   <div className="text-right text-xs text-muted-foreground">
                     <div>{lead.utmCampaign || "Sem campanha"}</div>
@@ -286,4 +306,3 @@ export default async function AdminPage() {
     </main>
   )
 }
-

@@ -5,7 +5,7 @@ import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site"
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: SITE_NAME,
-    short_name: "Acaraje",
+    short_name: "Acarajé",
     description: SITE_DESCRIPTION,
     start_url: "/",
     display: "standalone",
