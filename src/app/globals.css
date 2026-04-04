@@ -137,6 +137,12 @@
 }
 
 @layer utilities {
+  .brand-pattern-strip {
+    background-image: url("/brand/pattern-strip.svg");
+    background-repeat: repeat-x;
+    background-size: auto 100%;
+  }
+
   .mobile-category-nav,
   .mobile-product-carousel {
     scrollbar-width: none;

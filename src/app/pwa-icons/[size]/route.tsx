@@ -1,12 +1,32 @@
 import { ImageResponse } from "next/og"
 
-import { SITE_NAME } from "@/lib/site"
-
 export const runtime = "edge"
 
 function getDimension(rawSize: string) {
   const size = Number.parseInt(rawSize, 10)
   return [180, 192, 512].includes(size) ? size : null
+}
+
+function patternRow(size: number, top: number, inverted = false) {
+  const colors = inverted
+    ? ["#F8DCA2", "#5A3028", "#E9471D", "#F8DCA2", "#5A3028", "#E9471D"]
+    : ["#E9471D", "#F8DCA2", "#5A3028", "#E9471D", "#F8DCA2", "#5A3028"]
+  const blockWidth = size / 6
+  const blockHeight = size * 0.08
+
+  return colors.map((color, index) => (
+    <div
+      key={`${top}-${index}-${color}`}
+      style={{
+        position: "absolute",
+        left: index * blockWidth,
+        top,
+        width: blockWidth,
+        height: blockHeight,
+        background: color,
+      }}
+    />
+  ))
 }
 
 export async function GET(
@@ -20,8 +40,10 @@ export async function GET(
     return new Response("Not found", { status: 404 })
   }
 
-  const fontSize = size >= 512 ? 74 : size >= 192 ? 28 : 24
-  const badgeSize = size >= 512 ? 148 : size >= 192 ? 64 : 58
+  const stripeHeight = size * 0.08
+  const innerInset = size * 0.08
+  const monogramSize = size >= 512 ? 156 : size >= 192 ? 62 : 58
+  const labelSize = size >= 512 ? 42 : size >= 192 ? 16 : 14
 
   return new ImageResponse(
     (
@@ -32,53 +54,67 @@ export async function GET(
           width: "100%",
           alignItems: "center",
           justifyContent: "center",
-          background:
-            "radial-gradient(circle at top left, rgba(183,86,24,0.96), rgba(145,59,18,1) 46%, rgba(87,127,53,0.92) 100%)",
-          color: "#fffaf0",
-          fontFamily: "sans-serif",
+          background: "#F5A82F",
           position: "relative",
+          overflow: "hidden",
+          color: "#4B241D",
+          fontFamily: "Georgia, serif",
         }}
       >
+        {patternRow(size, 0)}
+        {patternRow(size, stripeHeight, true)}
+        {patternRow(size, size - stripeHeight * 2)}
+        {patternRow(size, size - stripeHeight, true)}
+
         <div
           style={{
             position: "absolute",
-            inset: size * 0.08,
-            borderRadius: size * 0.22,
-            border: "3px solid rgba(255,255,255,0.25)",
+            inset: innerInset,
+            borderRadius: size * 0.18,
+            border: "3px solid rgba(92,40,23,0.16)",
+            background:
+              "radial-gradient(circle at top left, rgba(255,231,176,0.4), transparent 26%), linear-gradient(180deg, rgba(247,173,62,0.98), rgba(241,159,38,0.98))",
           }}
         />
+
         <div
           style={{
+            position: "relative",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: size * 0.04,
+            justifyContent: "center",
+            gap: size * 0.02,
           }}
         >
           <div
             style={{
-              display: "flex",
-              height: badgeSize,
-              width: badgeSize,
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: badgeSize / 2,
-              background: "rgba(255,255,255,0.18)",
-              fontSize: badgeSize * 0.52,
+              fontSize: monogramSize,
+              lineHeight: 1,
+              fontWeight: 700,
             }}
           >
-            A
+            AJ
           </div>
           <div
             style={{
-              display: "flex",
-              fontSize,
-              fontWeight: 700,
-              letterSpacing: size >= 512 ? 2 : 1,
+              width: size * 0.18,
+              height: Math.max(6, size * 0.018),
+              borderRadius: 999,
+              background: "#E9471D",
+            }}
+          />
+          <div
+            style={{
+              fontFamily: "sans-serif",
+              fontSize: labelSize,
               textTransform: "uppercase",
+              letterSpacing: size >= 512 ? 8 : 3,
+              fontWeight: 700,
+              color: "#E9471D",
             }}
           >
-            {SITE_NAME}
+            Josi
           </div>
         </div>
       </div>
