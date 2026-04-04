@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import type { Metadata, Viewport } from "next"
 import Script from "next/script"
 import { Globe, Instagram } from "lucide-react"
@@ -75,7 +76,9 @@ export default function RootLayout({
         </Script>
 
         <AnalyticsProvider>
-          <GoogleAdsPageView />
+          <Suspense fallback={null}>
+            <GoogleAdsPageView />
+          </Suspense>
 
           <div className="relative min-h-screen">
             <header className="sticky top-0 z-40 border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,249,239,0.96),rgba(255,243,219,0.9))] backdrop-blur">
