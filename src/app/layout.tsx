@@ -81,10 +81,10 @@ export default function RootLayout({
           </Suspense>
 
           <div className="relative min-h-screen">
-            <header className="sticky top-0 z-40 border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,249,239,0.96),rgba(255,243,219,0.9))] backdrop-blur">
+            <header className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,249,239,0.96),rgba(255,243,219,0.9))]">
               <div className="brand-pattern-strip h-4 w-full opacity-95" />
 
-              <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+              <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
                 <BrandMark size="sm" hideCaption className="min-w-0" />
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -105,8 +105,8 @@ export default function RootLayout({
             <div>{children}</div>
 
             <footer className="border-t border-border/60 bg-[linear-gradient(180deg,rgba(255,249,241,0.92),rgba(252,243,224,0.88))]">
-              <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
-                <div className="grid gap-8 border-t border-border/60 pt-8 sm:grid-cols-[1.3fr_0.7fr] sm:gap-12 sm:pt-10">
+              <div className="mx-auto max-w-6xl px-4 pb-28 pt-12 sm:px-6 sm:pb-14 sm:pt-16">
+                <div className="grid gap-10 border-t border-border/60 pt-8 sm:grid-cols-[1.3fr_0.7fr] sm:gap-14 sm:pt-10">
                   <div className="max-w-xl space-y-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
                       {SITE_NAME}

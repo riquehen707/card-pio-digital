@@ -427,7 +427,7 @@ export function CartDrawer() {
       <Drawer.Trigger asChild>
         <button
           type="button"
-          className="fixed bottom-4 left-1/2 z-50 grid w-[min(420px,calc(100vw-1.25rem))] -translate-x-1/2 grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[26px] border border-[#8d4b1a]/20 bg-[linear-gradient(135deg,rgba(183,86,24,0.98),rgba(246,187,88,0.98))] px-4 py-3 text-primary-foreground shadow-[0_20px_40px_rgba(116,50,18,0.28)] transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[260px] sm:translate-x-0"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-1/2 z-50 grid w-[min(390px,calc(100vw-1rem))] -translate-x-1/2 grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[24px] border border-[#8d4b1a]/20 bg-[linear-gradient(135deg,rgba(183,86,24,0.98),rgba(246,187,88,0.98))] px-4 py-3 text-primary-foreground shadow-[0_20px_40px_rgba(116,50,18,0.28)] transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[260px] sm:translate-x-0"
         >
           <span className="inline-flex size-11 items-center justify-center rounded-full bg-black/12 shadow-inner shadow-black/5">
             <ShoppingBag className="size-5" />
