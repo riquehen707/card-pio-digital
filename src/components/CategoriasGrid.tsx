@@ -58,26 +58,51 @@ export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Pro
 
   return (
     <div className="space-y-10">
-      <nav className="mobile-category-nav -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-        {grupos.map(({ categoria, itens }) => (
-          <a
-            key={categoria}
-            href={`#categoria-${slugify(categoria)}`}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border bg-background/78 px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
+      <section className="warm-panel rounded-[30px] p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary/70">
+              Cardápio
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              Escolha sua categoria
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Navegue por seções e monte o pedido com poucos toques.
+            </p>
+          </div>
+
+          <Badge
+            variant="outline"
+            className="w-fit rounded-full border-primary/15 bg-background/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/80"
           >
-            <span>{categoria}</span>
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-              {itens.length}
-            </span>
-          </a>
-        ))}
-      </nav>
+            Pedido direto no WhatsApp
+          </Badge>
+        </div>
+
+        <div className="warm-divider mt-4 h-px w-full sm:mt-5" />
+
+        <nav className="mobile-category-nav -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:mt-5 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+          {grupos.map(({ categoria, itens }) => (
+            <a
+              key={categoria}
+              href={`#categoria-${slugify(categoria)}`}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/75 bg-white/82 px-4 py-2 text-sm font-medium text-foreground shadow-[0_8px_20px_rgba(117,54,20,0.07)] transition-all hover:-translate-y-0.5 hover:border-primary/20 hover:bg-[#fff3d8]"
+            >
+              <span>{categoria}</span>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                {itens.length}
+              </span>
+            </a>
+          ))}
+        </nav>
+      </section>
 
       {grupos.map(({ categoria, itens }) => (
         <section
           key={categoria}
           id={`categoria-${slugify(categoria)}`}
-          className="space-y-4 scroll-mt-28"
+          className="space-y-5 scroll-mt-36"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -88,14 +113,16 @@ export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Pro
             </div>
 
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-background/80">
-                Cardápio atualizado
+              <Badge variant="outline" className="rounded-full bg-background/80 px-3 py-1">
+                Feito na hora
               </Badge>
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/70 sm:hidden">
                 Arraste
               </p>
             </div>
           </div>
+
+          <div className="warm-divider h-px w-full" />
 
           <ul
             role="list"

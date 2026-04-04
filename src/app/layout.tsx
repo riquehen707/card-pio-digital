@@ -82,7 +82,7 @@ export default function RootLayout({
           </Suspense>
 
           <div className="relative min-h-screen">
-            <header className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,249,239,0.96),rgba(255,243,219,0.9))]">
+            <header className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,249,239,0.98),rgba(255,243,219,0.92))] shadow-[0_8px_30px_rgba(117,54,20,0.05)]">
               <div className="brand-pattern-strip h-4 w-full opacity-95" />
 
               <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
@@ -101,13 +101,24 @@ export default function RootLayout({
                   <PwaInstallPrompt />
                 </div>
               </div>
+
+              <div className="border-t border-border/60 bg-background/70">
+                <div className="mx-auto max-w-6xl px-4 py-2.5 sm:px-6">
+                  <p className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#8d4b1a]/15 bg-[linear-gradient(180deg,#fff5dd,#ffefd1)] px-3 py-2 text-center text-xs font-medium text-foreground shadow-[0_10px_22px_rgba(117,54,20,0.06),inset_0_1px_0_rgba(255,255,255,0.55)] sm:text-sm">
+                    <Clock3 className="size-4 shrink-0 text-primary" />
+                    <span>
+                      Funcionamento: <strong>{BUSINESS_HOURS}</strong>
+                    </span>
+                  </p>
+                </div>
+              </div>
             </header>
 
             <div>{children}</div>
 
             <footer className="border-t border-border/60 bg-[linear-gradient(180deg,rgba(255,249,241,0.92),rgba(252,243,224,0.88))]">
               <div className="mx-auto max-w-6xl px-4 pb-28 pt-12 sm:px-6 sm:pb-14 sm:pt-16">
-                <div className="grid gap-10 border-t border-border/60 pt-8 sm:grid-cols-[1.3fr_0.7fr] sm:gap-14 sm:pt-10">
+                <div className="warm-panel grid gap-10 rounded-[30px] p-6 sm:grid-cols-[1.3fr_0.7fr] sm:gap-14 sm:p-8">
                   <div className="max-w-xl space-y-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
                       {SITE_NAME}
@@ -125,10 +136,6 @@ export default function RootLayout({
                     <div className="space-y-2">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
                         Contato
-                      </p>
-                      <p className="inline-flex items-center gap-2 text-sm text-muted-foreground sm:justify-end">
-                        <Clock3 className="size-4" />
-                        {BUSINESS_HOURS}
                       </p>
                       <a
                         href={INSTAGRAM_URL}

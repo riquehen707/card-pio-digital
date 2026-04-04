@@ -50,7 +50,9 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
   const indisponivel = produto.disponivel === false
 
   return (
-    <Card className="group h-full overflow-hidden rounded-[28px] border-border/80 bg-[linear-gradient(180deg,rgba(255,252,247,0.98),rgba(255,244,221,0.96))] shadow-[0_18px_44px_rgba(117,54,20,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_52px_rgba(117,54,20,0.12)]">
+    <Card className="group relative h-full overflow-hidden rounded-[28px] border-white/70 bg-[linear-gradient(180deg,rgba(255,254,250,0.98),rgba(255,244,221,0.96))] shadow-[0_18px_44px_rgba(117,54,20,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/18 hover:shadow-[0_26px_58px_rgba(117,54,20,0.14)]">
+      <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-white/80" />
+
       <div className="relative aspect-[1/1] overflow-hidden sm:aspect-[4/3]">
         {hasImage ? (
           <Image
@@ -65,6 +67,7 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
           <ProductImageFallback nome={produto.nome} />
         )}
 
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/15 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
 
         <div className="absolute left-2 top-2 flex max-w-[calc(100%-1rem)] flex-wrap gap-1.5 sm:left-3 sm:top-3 sm:max-w-[calc(100%-1.5rem)] sm:gap-2">
@@ -97,39 +100,44 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
           <h3 className="line-clamp-2 text-base font-semibold leading-snug text-foreground sm:text-lg sm:leading-tight">
             {produto.nome}
           </h3>
-          <p className="text-xs leading-5 text-muted-foreground sm:text-sm">
+          <p className="line-clamp-2 text-xs leading-5 text-muted-foreground sm:text-sm">
             {produto.permiteRecheios
               ? "Monte do seu jeito, incluindo pimenta se quiser."
               : "Pedido rápido para adicionar ao carrinho."}
           </p>
         </div>
 
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-semibold text-primary sm:text-xl">
-              {BRL.format(precoAtual)}
-            </span>
-            {produto.precoPromocional && produto.precoPromocional < produto.preco ? (
-              <span className="text-xs text-muted-foreground line-through sm:text-sm">
-                {BRL.format(produto.preco)}
+        <div className="rounded-[22px] border border-border/70 bg-white/48 px-3 py-2.5">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/70">
+            Valor
+          </div>
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-lg font-semibold text-primary sm:text-xl">
+                {BRL.format(precoAtual)}
+              </span>
+              {produto.precoPromocional && produto.precoPromocional < produto.preco ? (
+                <span className="text-xs text-muted-foreground line-through sm:text-sm">
+                  {BRL.format(produto.preco)}
+                </span>
+              ) : null}
+            </div>
+
+            {!indisponivel ? (
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                {produto.permiteRecheios ? "Escolher" : "Adicionar"}
               </span>
             ) : null}
           </div>
-
-          {!indisponivel ? (
-            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-              {produto.permiteRecheios ? "Escolher" : "Adicionar"}
-            </span>
-          ) : null}
         </div>
       </CardContent>
 
-      <CardFooter className="p-3 pt-0 sm:p-5 sm:pt-0">
+      <CardFooter className="border-t border-border/60 bg-white/28 p-3 pt-3 sm:p-5 sm:pt-4">
         <Button
           fullWidth
           onClick={() => onSelecionar(produto)}
           disabled={indisponivel}
-          className="h-10 rounded-2xl px-3 text-xs sm:h-11 sm:px-5 sm:text-sm"
+          className="h-10 rounded-2xl px-3 text-xs shadow-[0_10px_24px_rgba(117,54,20,0.16)] sm:h-11 sm:px-5 sm:text-sm"
         >
           <ShoppingCart className="size-4" />
           {produto.permiteRecheios ? (
