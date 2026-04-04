@@ -1,6 +1,7 @@
-import "./globals.css"
 import type { Metadata, Viewport } from "next"
 import { Toaster } from "sonner"
+
+import "./globals.css"
 
 import { AnalyticsProvider } from "@/components/AnalyticsProvider"
 import PwaInstallPrompt from "@/components/PwaInstallPrompt"
@@ -58,9 +59,11 @@ export default function RootLayout({
               <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
                 <div className="space-y-1">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/70">
-                    Cardapio digital
+                    Cardápio digital
                   </p>
-                  <div className="text-xl font-semibold tracking-tight text-foreground">{SITE_NAME}</div>
+                  <div className="text-xl font-semibold tracking-tight text-foreground">
+                    {SITE_NAME}
+                  </div>
                   <p className="text-xs text-muted-foreground">Dendê, pimenta e pedido rápido.</p>
                 </div>
 
@@ -81,16 +84,37 @@ export default function RootLayout({
             <div>{children}</div>
 
             <footer className="border-t border-border/70 bg-[linear-gradient(180deg,rgba(255,247,232,0.86),rgba(246,230,195,0.86))]">
-              <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-muted-foreground sm:px-6 sm:flex-row sm:items-center sm:justify-between">
-                <p>{new Date().getFullYear()} {SITE_NAME}. Pedido rápido pelo WhatsApp.</p>
-                <a
-                  href={DEV_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition hover:text-foreground"
-                >
-                  Sistema desenvolvido por {DEV_HANDLE}
-                </a>
+              <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-5">
+                <div className="flex flex-col gap-3 rounded-[24px] border border-border/70 bg-background/60 px-4 py-4 text-muted-foreground shadow-[0_16px_36px_rgba(95,42,15,0.06)] sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/70">
+                      {SITE_NAME}
+                    </p>
+                    <p className="text-xs leading-5 sm:text-sm">
+                      {new Date().getFullYear()} {SITE_NAME}. Pedido rápido pelo WhatsApp.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:justify-end sm:text-sm">
+                    <a
+                      href={INSTAGRAM_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition hover:text-foreground"
+                    >
+                      {INSTAGRAM_HANDLE}
+                    </a>
+                    <span className="text-border">•</span>
+                    <a
+                      href={DEV_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition hover:text-foreground"
+                    >
+                      Sistema desenvolvido por {DEV_HANDLE}
+                    </a>
+                  </div>
+                </div>
               </div>
             </footer>
           </div>
