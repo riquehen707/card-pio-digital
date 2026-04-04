@@ -1,14 +1,17 @@
 import type { Metadata, Viewport } from "next"
+import Script from "next/script"
 import { Toaster } from "sonner"
 
 import "./globals.css"
 
 import { AnalyticsProvider } from "@/components/AnalyticsProvider"
 import { BrandMark } from "@/components/BrandMark"
+import { GoogleAdsPageView } from "@/components/GoogleAdsPageView"
 import PwaInstallPrompt from "@/components/PwaInstallPrompt"
 import {
   DEV_HANDLE,
   DEV_URL,
+  GOOGLE_ADS_ID,
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
   SITE_DESCRIPTION,
@@ -54,7 +57,21 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={cn("min-h-screen bg-background text-foreground antialiased")}>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-ads-gtag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            window.gtag = gtag;
+            gtag('js', new Date());
+            gtag('config', '${GOOGLE_ADS_ID}');
+          `}
+        </Script>
         <AnalyticsProvider>
+          <GoogleAdsPageView />
           <div className="relative min-h-screen">
             <header className="sticky top-0 z-40 border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,249,239,0.96),rgba(255,243,219,0.9))] backdrop-blur">
               <div className="brand-pattern-strip h-4 w-full opacity-95" />
