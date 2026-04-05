@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import type { Metadata, Viewport } from "next"
 import Script from "next/script"
-import { Clock3, Globe, Instagram } from "lucide-react"
+import { Clock3, Instagram } from "lucide-react"
 import { Toaster } from "sonner"
 
 import "./globals.css"
@@ -12,10 +12,7 @@ import { GoogleAdsPageView } from "@/components/GoogleAdsPageView"
 import PwaInstallPrompt from "@/components/PwaInstallPrompt"
 import {
   BUSINESS_HOURS,
-  DEV_HANDLE,
-  DEV_SITE_LABEL,
   DEV_SITE_URL,
-  DEV_URL,
   GOOGLE_ADS_ID,
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
@@ -118,60 +115,41 @@ export default function RootLayout({
 
             <footer className="border-t border-border/60 bg-[linear-gradient(180deg,rgba(255,249,241,0.92),rgba(252,243,224,0.88))]">
               <div className="mx-auto max-w-6xl px-4 pb-28 pt-12 sm:px-6 sm:pb-14 sm:pt-16">
-                <div className="warm-panel grid gap-10 rounded-[30px] p-6 sm:grid-cols-[1.3fr_0.7fr] sm:gap-14 sm:p-8">
-                  <div className="max-w-xl space-y-3">
+                <div className="warm-panel grid gap-8 rounded-[30px] p-6 sm:grid-cols-[1fr_auto] sm:items-end sm:gap-10 sm:p-8">
+                  <div className="space-y-2">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
                       {SITE_NAME}
-                    </p>
-                    <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-                      Pedido rápido pelo WhatsApp, localização salva e um fluxo direto para montar
-                      o pedido sem ruído.
                     </p>
                     <p className="text-xs text-muted-foreground/90 sm:text-sm">
                       {new Date().getFullYear()} {SITE_NAME}.
                     </p>
-                  </div>
-
-                  <div className="space-y-4 sm:justify-self-end sm:text-right">
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
-                        Contato
-                      </p>
+                    <p className="text-xs text-muted-foreground/80 sm:text-sm">
+                      Site projetado e publicado por{" "}
                       <a
-                        href={INSTAGRAM_URL}
+                        href={DEV_SITE_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground sm:justify-end"
+                        className="underline decoration-primary/35 underline-offset-4 transition hover:text-foreground"
                       >
-                        <Instagram className="size-4" />
-                        {INSTAGRAM_HANDLE}
+                        henrique reis
                       </a>
-                    </div>
+                      .
+                    </p>
+                  </div>
 
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
-                        Créditos
-                      </p>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground sm:justify-end">
-                        <a
-                          href={DEV_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="transition hover:text-foreground"
-                        >
-                          {DEV_HANDLE}
-                        </a>
-                        <a
-                          href={DEV_SITE_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 transition hover:text-foreground"
-                        >
-                          <Globe className="size-4" />
-                          {DEV_SITE_LABEL}
-                        </a>
-                      </div>
-                    </div>
+                  <div className="space-y-2 sm:text-right">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
+                      Contato
+                    </p>
+                    <a
+                      href={INSTAGRAM_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground sm:justify-end"
+                    >
+                      <Instagram className="size-4" />
+                      {INSTAGRAM_HANDLE}
+                    </a>
                   </div>
                 </div>
               </div>

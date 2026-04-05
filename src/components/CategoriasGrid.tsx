@@ -112,14 +112,9 @@ export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Pro
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="rounded-full bg-background/80 px-3 py-1">
-                Feito na hora
-              </Badge>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/70 sm:hidden">
-                Arraste
-              </p>
-            </div>
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/70 sm:hidden">
+              Arraste
+            </p>
           </div>
 
           <div className="warm-divider h-px w-full" />

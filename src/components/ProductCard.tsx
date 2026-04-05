@@ -79,7 +79,7 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
               Personalizável
             </Badge>
           ) : null}
-          {added ? <Badge variant="success">Adicionado</Badge> : null}
+          {added ? <Badge variant="success">No carrinho</Badge> : null}
         </div>
 
         <div className="absolute bottom-2 left-2 rounded-full bg-black/40 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white backdrop-blur-sm sm:bottom-3 sm:left-3">
@@ -95,39 +95,31 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
         ) : null}
       </div>
 
-      <CardContent className="space-y-3 p-3 sm:p-5">
-        <div className="space-y-1">
+      <CardContent className="p-3 sm:p-5">
+        <div className="space-y-3">
           <h3 className="line-clamp-2 text-base font-semibold leading-snug text-foreground sm:text-lg sm:leading-tight">
             {produto.nome}
           </h3>
-          <p className="line-clamp-2 text-xs leading-5 text-muted-foreground sm:text-sm">
-            {produto.permiteRecheios
-              ? "Monte do seu jeito, incluindo pimenta se quiser."
-              : "Pedido rápido para adicionar ao carrinho."}
-          </p>
-        </div>
 
-        <div className="rounded-[22px] border border-border/70 bg-white/48 px-3 py-2.5">
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/70">
-            Valor
-          </div>
-          <div className="flex items-end justify-between gap-3">
-            <div className="flex items-baseline gap-2">
-              <span className="text-lg font-semibold text-primary sm:text-xl">
-                {BRL.format(precoAtual)}
-              </span>
-              {produto.precoPromocional && produto.precoPromocional < produto.preco ? (
-                <span className="text-xs text-muted-foreground line-through sm:text-sm">
-                  {BRL.format(produto.preco)}
+          <div className="rounded-[22px] border border-border/70 bg-white/48 px-3 py-3">
+            <div className="flex items-end justify-between gap-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-lg font-semibold text-primary sm:text-xl">
+                  {BRL.format(precoAtual)}
+                </span>
+                {produto.precoPromocional && produto.precoPromocional < produto.preco ? (
+                  <span className="text-xs text-muted-foreground line-through sm:text-sm">
+                    {BRL.format(produto.preco)}
+                  </span>
+                ) : null}
+              </div>
+
+              {produto.permiteRecheios && !indisponivel ? (
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                  Escolher
                 </span>
               ) : null}
             </div>
-
-            {!indisponivel ? (
-              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                {produto.permiteRecheios ? "Escolher" : "Adicionar"}
-              </span>
-            ) : null}
           </div>
         </div>
       </CardContent>
@@ -140,17 +132,7 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
           className="h-10 rounded-2xl px-3 text-xs shadow-[0_10px_24px_rgba(117,54,20,0.16)] sm:h-11 sm:px-5 sm:text-sm"
         >
           <ShoppingCart className="size-4" />
-          {produto.permiteRecheios ? (
-            <>
-              <span className="sm:hidden">Montar</span>
-              <span className="hidden sm:inline">Escolher recheios e extras</span>
-            </>
-          ) : (
-            <>
-              <span className="sm:hidden">Adicionar</span>
-              <span className="hidden sm:inline">Adicionar ao carrinho</span>
-            </>
-          )}
+          <span>{produto.permiteRecheios ? "Montar" : "Pedir"}</span>
         </Button>
       </CardFooter>
     </Card>
