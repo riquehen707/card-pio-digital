@@ -9,6 +9,7 @@ import CategoriasGrid from "@/components/CategoriasGrid"
 import RecheioDialog from "@/components/RecheioDialog"
 import { produtos } from "@/data/produtos"
 import { useCarrinho } from "@/hooks/useCarrinho"
+import { reportMetaAddToCart } from "@/lib/metaPixel"
 import type { Produto } from "@/types/produto"
 
 export default function Home() {
@@ -77,6 +78,15 @@ export default function Home() {
         categoria: produto.categoria,
         recheios: recheios ?? [],
       },
+    })
+    reportMetaAddToCart({
+      productId: produto.id,
+      productName: produto.nome,
+      category: produto.categoria,
+      value:
+        produto.precoPromocional && produto.precoPromocional < produto.preco
+          ? produto.precoPromocional
+          : produto.preco,
     })
     toast.success(`${produto.nome} foi adicionado ao carrinho.`)
   }

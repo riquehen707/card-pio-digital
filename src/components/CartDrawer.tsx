@@ -24,6 +24,7 @@ import { agruparItens } from "@/features/carrinho/agruparItens"
 import { calcularPrecoEntrega } from "@/features/carrinho/calcularEntrega"
 import { useCarrinho } from "@/hooks/useCarrinho"
 import { reportGoogleAdsConversion } from "@/lib/googleAds"
+import { reportMetaLead } from "@/lib/metaPixel"
 import { cn } from "@/lib/utils"
 import {
   criarLinkGoogleMaps,
@@ -406,6 +407,17 @@ export function CartDrawer() {
         paymentMethod: pagamento.metodo,
         deliveryDistanceKm: entregaAtual.distanciaKm,
       },
+    })
+
+    reportMetaLead({
+      value: totalAtual,
+      currency: "BRL",
+      paymentMethod: pagamento.metodo,
+      items: grupos.map((grupo) => ({
+        id: grupo.productId,
+        quantity: grupo.quantidade,
+        itemPrice: grupo.precoUnitario,
+      })),
     })
 
     reportGoogleAdsConversion({
