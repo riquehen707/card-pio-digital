@@ -50,16 +50,16 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
   const indisponivel = produto.disponivel === false
 
   return (
-    <Card className="group relative h-full overflow-hidden rounded-[28px] border-white/70 bg-[linear-gradient(180deg,rgba(255,254,250,0.98),rgba(255,244,221,0.96))] shadow-[0_18px_44px_rgba(117,54,20,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/18 hover:shadow-[0_26px_58px_rgba(117,54,20,0.14)]">
-      <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-white/80" />
+    <Card className="group relative flex h-full flex-col overflow-hidden rounded-[26px] border-white/75 bg-[linear-gradient(180deg,rgba(255,254,250,0.98),rgba(255,244,221,0.96))] shadow-[0_18px_40px_rgba(117,54,20,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/18 hover:shadow-[0_26px_58px_rgba(117,54,20,0.14)]">
+      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-white/80" />
 
-      <div className="relative aspect-[1/1] overflow-hidden sm:aspect-[4/3]">
+      <div className="relative aspect-[4/5] overflow-hidden sm:aspect-[4/3]">
         {hasImage ? (
           <Image
             src={produto.imagem!}
             alt={produto.nome}
             fill
-            sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 42vw"
+            sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 46vw"
             className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
             onError={() => setImageFailed(true)}
           />
@@ -67,8 +67,8 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
           <ProductImageFallback nome={produto.nome} />
         )}
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/15 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/18 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/35 via-black/8 to-transparent" />
 
         <div className="absolute left-2 top-2 flex max-w-[calc(100%-1rem)] flex-wrap gap-1.5 sm:left-3 sm:top-3 sm:max-w-[calc(100%-1.5rem)] sm:gap-2">
           {produto.permiteRecheios ? (
@@ -82,10 +82,6 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
           {added ? <Badge variant="success">No carrinho</Badge> : null}
         </div>
 
-        <div className="absolute bottom-2 left-2 rounded-full bg-black/40 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white backdrop-blur-sm sm:bottom-3 sm:left-3">
-          {produto.categoria}
-        </div>
-
         {indisponivel ? (
           <div className="absolute inset-0 grid place-items-center bg-black/45">
             <Badge variant="outline" className="border-white/40 bg-black/35 text-white">
@@ -95,15 +91,23 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
         ) : null}
       </div>
 
-      <CardContent className="p-3 sm:p-5">
-        <div className="space-y-3">
-          <h3 className="line-clamp-2 text-base font-semibold leading-snug text-foreground sm:text-lg sm:leading-tight">
+      <CardContent className="flex flex-1 flex-col gap-3 p-3 sm:p-5">
+        <div className="space-y-1.5">
+          <h3 className="min-h-[2.7rem] text-[15px] font-semibold leading-snug text-foreground sm:min-h-[3rem] sm:text-lg sm:leading-tight">
             {produto.nome}
           </h3>
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary/72 sm:text-xs">
+            {produto.permiteRecheios ? "Escolha os recheios no próximo passo" : "Adição rápida ao carrinho"}
+          </p>
+        </div>
 
-          <div className="rounded-[22px] border border-border/70 bg-white/48 px-3 py-3">
-            <div className="flex items-end justify-between gap-3">
-              <div className="flex items-baseline gap-2">
+        <div className="mt-auto rounded-[22px] border border-border/70 bg-white/55 px-3 py-3">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                Preço
+              </p>
+              <div className="mt-1 flex flex-wrap items-baseline gap-2">
                 <span className="text-lg font-semibold text-primary sm:text-xl">
                   {BRL.format(precoAtual)}
                 </span>
@@ -113,26 +117,20 @@ export default function ProductCard({ produto, onSelecionar, added = false }: Pr
                   </span>
                 ) : null}
               </div>
-
-              {produto.permiteRecheios && !indisponivel ? (
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                  Escolher
-                </span>
-              ) : null}
             </div>
           </div>
         </div>
       </CardContent>
 
-      <CardFooter className="border-t border-border/60 bg-white/28 p-3 pt-3 sm:p-5 sm:pt-4">
+      <CardFooter className="border-t border-border/60 bg-white/35 p-3 pt-3 sm:p-5 sm:pt-4">
         <Button
           fullWidth
           onClick={() => onSelecionar(produto)}
           disabled={indisponivel}
-          className="h-10 rounded-2xl px-3 text-xs shadow-[0_10px_24px_rgba(117,54,20,0.16)] sm:h-11 sm:px-5 sm:text-sm"
+          className="h-11 rounded-2xl px-3 text-xs shadow-[0_10px_24px_rgba(117,54,20,0.16)] sm:h-11 sm:px-5 sm:text-sm"
         >
           <ShoppingCart className="size-4" />
-          <span>{produto.permiteRecheios ? "Montar" : "Pedir"}</span>
+          <span>{produto.permiteRecheios ? "Personalizar" : "Adicionar"}</span>
         </Button>
       </CardFooter>
     </Card>

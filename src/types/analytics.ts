@@ -35,6 +35,7 @@ export type LeadCheckoutInput = {
   sessionId?: string | null
   subtotal: number
   deliveryFee: number
+  originalDeliveryFee?: number | null
   total: number
   whatsappNumber?: string | null
   locationUrl?: string | null
@@ -44,5 +45,10 @@ export type LeadCheckoutInput = {
   needsChange?: boolean | null
   cashTendered?: number | null
   changeAmount?: number | null
+  couponCode?: string | null
+  couponDiscount?: number | null
+  couponMinimumSubtotal?: number | null
+  couponEligible?: boolean | null
+  deliveryPendingQuote?: boolean | null
   items: LeadCheckoutItemInput[]
 }

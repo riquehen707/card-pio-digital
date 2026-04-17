@@ -2,17 +2,20 @@
 
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import type { ItemCarrinho, LocalizacaoSalva } from '@/types/carrinho'
+import type { CupomEntregaAtivo, ItemCarrinho, LocalizacaoSalva } from '@/types/carrinho'
 
 type CarrinhoState = {
   hidratado: boolean
   itens: ItemCarrinho[]
   localizacaoFixa: LocalizacaoSalva | null
+  cupomEntrega: CupomEntregaAtivo | null
   adicionarItem: (item: ItemCarrinho) => void
   removerItem: (index: number) => void
   limparCarrinho: () => void
   salvarLocalizacao: (localizacao: LocalizacaoSalva) => void
   limparLocalizacao: () => void
+  aplicarCupomEntrega: (cupom: CupomEntregaAtivo) => void
+  removerCupomEntrega: () => void
   marcarHidratado: () => void
 }
 
@@ -22,6 +25,7 @@ export const useCarrinho = create<CarrinhoState>()(
       hidratado: false,
       itens: [],
       localizacaoFixa: null,
+      cupomEntrega: null,
 
       adicionarItem: (item) => {
         set((state) => ({ itens: [...state.itens, item] }))
@@ -45,6 +49,14 @@ export const useCarrinho = create<CarrinhoState>()(
         set({ localizacaoFixa: null })
       },
 
+      aplicarCupomEntrega: (cupom) => {
+        set({ cupomEntrega: cupom })
+      },
+
+      removerCupomEntrega: () => {
+        set({ cupomEntrega: null })
+      },
+
       marcarHidratado: () => {
         set({ hidratado: true })
       },
@@ -55,6 +67,7 @@ export const useCarrinho = create<CarrinhoState>()(
       partialize: (state) => ({
         itens: state.itens,
         localizacaoFixa: state.localizacaoFixa,
+        cupomEntrega: state.cupomEntrega,
       }),
       onRehydrateStorage: () => (state) => {
         state?.marcarHidratado()

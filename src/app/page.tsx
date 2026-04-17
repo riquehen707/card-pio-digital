@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { useAnalytics } from "@/components/AnalyticsProvider"
 import { CartDrawer } from "@/components/CartDrawer"
 import CategoriasGrid from "@/components/CategoriasGrid"
+import { DeliveryCouponBanner } from "@/components/DeliveryCouponBanner"
 import RecheioDialog from "@/components/RecheioDialog"
 import { produtos } from "@/data/produtos"
 import { useCarrinho } from "@/hooks/useCarrinho"
@@ -111,6 +112,10 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-32 pt-8 sm:px-6 sm:pb-28 sm:pt-10">
+      <Suspense fallback={null}>
+        <DeliveryCouponBanner />
+      </Suspense>
+
       <CategoriasGrid
         produtos={produtosDisponiveis}
         addedIds={recentAdded}

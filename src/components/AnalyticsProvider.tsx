@@ -19,6 +19,7 @@ import {
   hasAttributionParams,
   mergeAttribution,
 } from "@/lib/attribution"
+import { postJsonInBackground } from "@/lib/postJsonInBackground"
 import type { AnalyticsEventInput, AttributionSnapshot } from "@/types/analytics"
 
 type AnalyticsContextValue = {
@@ -84,20 +85,14 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     setSessionId(nextSessionId)
     setAttribution(nextAttribution)
 
-    await fetch("/api/analytics/session", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        sessionId: nextSessionId,
-        landingPath: currentPagePath,
-        locale: navigator.language,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        userAgent: navigator.userAgent,
-        attribution: nextAttribution,
-      }),
-    }).catch(() => undefined)
+    postJsonInBackground("/api/analytics/session", {
+      sessionId: nextSessionId,
+      landingPath: currentPagePath,
+      locale: navigator.language,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      userAgent: navigator.userAgent,
+      attribution: nextAttribution,
+    })
 
     return nextSessionId
   }, [pathname])
@@ -107,16 +102,10 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       const activeSessionId = sessionId ?? (await initializeSession())
       if (!activeSessionId) return
 
-      await fetch("/api/analytics/event", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          sessionId: activeSessionId,
-          ...event,
-        }),
-      }).catch(() => undefined)
+      postJsonInBackground("/api/analytics/event", {
+        sessionId: activeSessionId,
+        ...event,
+      })
     },
     [initializeSession, sessionId]
   )

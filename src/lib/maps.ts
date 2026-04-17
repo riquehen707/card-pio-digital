@@ -14,6 +14,9 @@ export function extrairCoordenadasDoLink(link: string): Coordenadas | null {
     /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
     /[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
     /[?&]ll=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
+    /[?&]sll=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
+    /[?&]daddr=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
+    /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,
     COORDENADAS_REGEX,
   ]
 
@@ -39,4 +42,3 @@ export function criarLinkGoogleMaps({ lat, lng }: Coordenadas) {
 export function formatarCoordenadas({ lat, lng }: Coordenadas) {
   return `${lat.toFixed(6)}, ${lng.toFixed(6)}`
 }
-

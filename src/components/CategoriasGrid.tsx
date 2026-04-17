@@ -3,7 +3,6 @@
 import * as React from "react"
 
 import ProductCard from "@/components/ProductCard"
-import { Badge } from "@/components/ui/badge"
 import type { Produto } from "@/types/produto"
 
 type Props = {
@@ -12,15 +11,17 @@ type Props = {
   onSelecionar: (produto: Produto) => void
 }
 
-function slugify(valor: string) {
-  return (
-    valor
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") || "categoria"
-  )
+function getCategoryPriority(categoria: string) {
+  const categoriaNormalizada = categoria
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+
+  if (categoriaNormalizada === "comidas") return 0
+  if (categoriaNormalizada === "bebidas") return 1
+
+  return 10
 }
 
 export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Props) {
@@ -41,7 +42,15 @@ export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Pro
     })
 
     return Array.from(mapa.entries())
-      .sort(([a], [b]) => collator.compare(a, b))
+      .sort(([a], [b]) => {
+        const priorityDiff = getCategoryPriority(a) - getCategoryPriority(b)
+
+        if (priorityDiff !== 0) {
+          return priorityDiff
+        }
+
+        return collator.compare(a, b)
+      })
       .map(([categoria, itens]) => ({
         categoria,
         itens: itens.sort((a, b) => collator.compare(a.nome, b.nome)),
@@ -51,80 +60,32 @@ export default function CategoriasGrid({ produtos, addedIds, onSelecionar }: Pro
   if (grupos.length === 0) {
     return (
       <div className="rounded-[28px] border border-dashed border-border bg-card/60 p-8 text-center text-sm text-muted-foreground">
-        Nenhum produto disponível no momento.
+        Nenhum produto disponivel no momento.
       </div>
     )
   }
 
   return (
-    <div className="space-y-10">
-      <section className="warm-panel rounded-[30px] p-4 sm:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary/70">
-              Cardápio
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Escolha sua categoria
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Navegue por seções e monte o pedido com poucos toques.
-            </p>
-          </div>
-
-          <Badge
-            variant="outline"
-            className="w-fit rounded-full border-primary/15 bg-background/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/80"
-          >
-            Pedido direto no WhatsApp
-          </Badge>
-        </div>
-
-        <div className="warm-divider mt-4 h-px w-full sm:mt-5" />
-
-        <nav className="mobile-category-nav -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:mt-5 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-          {grupos.map(({ categoria, itens }) => (
-            <a
-              key={categoria}
-              href={`#categoria-${slugify(categoria)}`}
-              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/75 bg-white/82 px-4 py-2 text-sm font-medium text-foreground shadow-[0_8px_20px_rgba(117,54,20,0.07)] transition-all hover:-translate-y-0.5 hover:border-primary/20 hover:bg-[#fff3d8]"
-            >
-              <span>{categoria}</span>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                {itens.length}
-              </span>
-            </a>
-          ))}
-        </nav>
-      </section>
-
+    <div className="space-y-5 sm:space-y-8">
       {grupos.map(({ categoria, itens }) => (
-        <section
-          key={categoria}
-          id={`categoria-${slugify(categoria)}`}
-          className="space-y-5 scroll-mt-36"
-        >
+        <section key={categoria} className="space-y-4 sm:space-y-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">{categoria}</h2>
               <p className="text-sm text-muted-foreground">
-                {itens.length} {itens.length === 1 ? "item" : "itens"} nesta seção
+                {itens.length} {itens.length === 1 ? "item" : "itens"} nesta secao
               </p>
             </div>
-
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/70 sm:hidden">
-              Arraste
-            </p>
           </div>
 
           <div className="warm-divider h-px w-full" />
 
           <ul
             role="list"
-            className="mobile-product-carousel -mx-4 grid snap-x snap-mandatory grid-flow-col gap-3 overflow-x-auto px-4 pb-2 [grid-auto-columns:clamp(10.5rem,43vw,12.5rem)] sm:mx-0 sm:grid-flow-row sm:overflow-visible sm:px-0 sm:pb-0 sm:[grid-auto-columns:auto] sm:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))] sm:gap-5"
+            className="grid grid-cols-2 gap-3 sm:[grid-template-columns:repeat(auto-fit,minmax(230px,1fr))] sm:gap-5"
           >
             {itens.map((produto) => (
-              <li key={produto.id} className="snap-start">
+              <li key={produto.id} className="h-full">
                 <ProductCard
                   produto={produto}
                   onSelecionar={onSelecionar}

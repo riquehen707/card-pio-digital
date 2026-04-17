@@ -22,16 +22,21 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { agruparItens } from "@/features/carrinho/agruparItens"
 import { calcularPrecoEntrega } from "@/features/carrinho/calcularEntrega"
+import {
+  calcularEntregaComCupom,
+  DELIVERY_FREE_COUPON_MIN_SUBTOTAL,
+} from "@/features/carrinho/cupomEntrega"
 import { useCarrinho } from "@/hooks/useCarrinho"
 import { reportGoogleAdsConversion } from "@/lib/googleAds"
-import { reportMetaLead } from "@/lib/metaPixel"
-import { cn } from "@/lib/utils"
 import {
   criarLinkGoogleMaps,
   extrairCoordenadasDoLink,
   formatarCoordenadas,
 } from "@/lib/maps"
+import { reportMetaLead } from "@/lib/metaPixel"
+import { postJsonInBackground } from "@/lib/postJsonInBackground"
 import { WHATSAPP_NUMBER } from "@/lib/site"
+import { cn } from "@/lib/utils"
 import type {
   Coordenadas,
   LocalizacaoSalva,
@@ -43,6 +48,11 @@ const BRL = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 })
+
+const MENSAGEM_SEM_LOCALIZACAO =
+  "Por favor envie a localização fixa após enviar o pedido"
+const MENSAGEM_COM_LOCALIZACAO =
+  "Lembre-se de verificar se seu endereço está correto e com o número da casa, deixe seu número de contato para o entregador também"
 
 const paymentOptions: Array<{
   id: MetodoPagamento
@@ -70,7 +80,64 @@ const paymentOptions: Array<{
   },
 ]
 
-type EstadoPermissao = PermissionState | "unsupported"
+type EstadoPermissao = PermissionState | "unknown" | "unsupported"
+
+function isGeolocationPositionError(error: unknown): error is GeolocationPositionError {
+  return typeof error === "object" && error !== null && "code" in error
+}
+
+function isAppleMobileDevice() {
+  if (typeof navigator === "undefined") return false
+
+  return (
+    /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  )
+}
+
+function isInAppBrowser() {
+  if (typeof navigator === "undefined") return false
+
+  return /Instagram|FBAN|FBAV|Line|MicroMessenger/i.test(navigator.userAgent)
+}
+
+function getLocationStatusLabel(status: EstadoPermissao) {
+  switch (status) {
+    case "granted":
+      return "Permitida"
+    case "denied":
+      return "Bloqueada"
+    case "prompt":
+      return "Pendente"
+    case "unknown":
+      return "Solicitar"
+    default:
+      return "Sem suporte"
+  }
+}
+
+function getLocationErrorMessage(error: unknown) {
+  const usandoIphone = isAppleMobileDevice()
+  const usandoNavegadorInterno = isInAppBrowser()
+
+  if (isGeolocationPositionError(error)) {
+    if (error.code === error.PERMISSION_DENIED) {
+      return usandoIphone || usandoNavegadorInterno
+        ? "A localização foi bloqueada. No iPhone, abra no Safari ou cole um link do Apple Maps/Google Maps."
+        : "A localização foi bloqueada pelo navegador. Permita o acesso ou cole um link de mapa."
+    }
+
+    if (error.code === error.TIMEOUT) {
+      return "A localização demorou demais. Tente novamente ou cole um link do Apple Maps/Google Maps."
+    }
+
+    if (error.code === error.POSITION_UNAVAILABLE) {
+      return "Não foi possível determinar sua localização. Cole um link do Apple Maps/Google Maps."
+    }
+  }
+
+  return "Não foi possível obter sua localização. Você pode colar um link do Apple Maps/Google Maps."
+}
 
 function getCurrentPosition(options?: PositionOptions): Promise<Coordenadas> {
   return new Promise((resolve, reject) => {
@@ -85,6 +152,26 @@ function getCurrentPosition(options?: PositionOptions): Promise<Coordenadas> {
       options
     )
   })
+}
+
+async function getBestEffortCurrentPosition() {
+  try {
+    return await getCurrentPosition({
+      enableHighAccuracy: false,
+      timeout: 6500,
+      maximumAge: 300000,
+    })
+  } catch (error) {
+    if (isGeolocationPositionError(error) && error.code === error.PERMISSION_DENIED) {
+      throw error
+    }
+
+    return getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 0,
+    })
+  }
 }
 
 function criarLocalizacaoSalva(
@@ -126,28 +213,60 @@ function parseCurrencyValue(value: string) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function formatarHorarioCurto(value: string) {
+  const data = new Date(value)
+  if (Number.isNaN(data.getTime())) return null
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(data)
+}
+
 export function CartDrawer() {
   const hidratado = useCarrinho((state) => state.hidratado)
   const itens = useCarrinho((state) => state.itens)
   const localizacaoFixa = useCarrinho((state) => state.localizacaoFixa)
+  const cupomEntrega = useCarrinho((state) => state.cupomEntrega)
   const removerItem = useCarrinho((state) => state.removerItem)
   const limparCarrinho = useCarrinho((state) => state.limparCarrinho)
   const salvarLocalizacao = useCarrinho((state) => state.salvarLocalizacao)
   const limparLocalizacao = useCarrinho((state) => state.limparLocalizacao)
+  const removerCupomEntrega = useCarrinho((state) => state.removerCupomEntrega)
   const { sessionId, trackEvent } = useAnalytics()
 
   const [aberto, setAberto] = useState(false)
   const [linkAlternativo, setLinkAlternativo] = useState("")
   const [geoLoading, setGeoLoading] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [permissaoLocalizacao, setPermissaoLocalizacao] =
-    useState<EstadoPermissao>("unsupported")
+    useState<EstadoPermissao>("unknown")
   const [metodoPagamento, setMetodoPagamento] = useState<MetodoPagamento>("pix")
   const [precisaTroco, setPrecisaTroco] = useState<boolean | null>(null)
   const [valorEmDinheiro, setValorEmDinheiro] = useState("")
+  const [locationErrorHint, setLocationErrorHint] = useState<string | null>(null)
+  const [ambienteLocalizacao, setAmbienteLocalizacao] = useState({
+    ios: false,
+    inApp: false,
+  })
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("permissions" in navigator)) {
+    if (typeof window === "undefined") return
+
+    setAmbienteLocalizacao({
+      ios: isAppleMobileDevice(),
+      inApp: isInAppBrowser(),
+    })
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
       setPermissaoLocalizacao("unsupported")
+      return
+    }
+
+    if (!("permissions" in navigator) || typeof navigator.permissions.query !== "function") {
+      setPermissaoLocalizacao("unknown")
       return
     }
 
@@ -163,7 +282,7 @@ export function CartDrawer() {
         status.onchange = () => setPermissaoLocalizacao(status.state)
       })
       .catch(() => {
-        if (ativo) setPermissaoLocalizacao("unsupported")
+        if (ativo) setPermissaoLocalizacao("unknown")
       })
 
     return () => {
@@ -183,7 +302,7 @@ export function CartDrawer() {
 
   const grupos = useMemo(() => agruparItens(itens), [itens])
   const subtotal = useMemo(
-    () => grupos.reduce((total, grupo) => total + grupo.precoUnitario * grupo.quantidade, 0),
+    () => grupos.reduce((totalGrupo, grupo) => totalGrupo + grupo.precoUnitario * grupo.quantidade, 0),
     [grupos]
   )
 
@@ -205,7 +324,16 @@ export function CartDrawer() {
     () => (localizacaoAtiva ? calcularPrecoEntrega(localizacaoAtiva.coordenadas) : null),
     [localizacaoAtiva]
   )
-  const total = subtotal + (entrega?.preco ?? 0)
+  const entregaComCupom = useMemo(
+    () =>
+      calcularEntregaComCupom({
+        subtotal,
+        originalDeliveryFee: entrega?.preco,
+        cupomEntrega,
+      }),
+    [cupomEntrega, entrega?.preco, subtotal]
+  )
+  const total = subtotal + entregaComCupom.taxaFinal
   const resumoItens = `${itens.length} ${itens.length === 1 ? "item" : "itens"}`
 
   const valorEmDinheiroNumero = useMemo(
@@ -225,31 +353,69 @@ export function CartDrawer() {
     precisaTroco === true &&
     (valorEmDinheiroNumero === null || valorEmDinheiroNumero <= total)
 
-  async function solicitarLocalizacaoAtual() {
+  const mostrarAjudaLocalizacao =
+    ambienteLocalizacao.ios ||
+    ambienteLocalizacao.inApp ||
+    Boolean(locationErrorHint) ||
+    permissaoLocalizacao === "unknown" ||
+    permissaoLocalizacao === "denied"
+
+  const descricaoAjudaLocalizacao =
+    locationErrorHint ??
+    (ambienteLocalizacao.ios
+      ? "No iPhone, a permissão pode aparecer só depois do toque. Se não abrir, use Safari ou cole um link do app Mapas."
+      : ambienteLocalizacao.inApp
+        ? "Navegadores internos de Instagram/Facebook podem falhar ao pedir localização. Se acontecer, cole um link de mapa."
+        : "Aceita links do Apple Maps, Google Maps e coordenadas no formato -12.123456, -38.123456.")
+
+  const localizacaoGpsSalva = localizacaoFixa?.origem === "gps" ? localizacaoFixa : null
+  const localizacaoManualSalva = localizacaoFixa?.origem === "manual" ? localizacaoFixa : null
+  const horarioLocalizacaoSalva = localizacaoFixa
+    ? formatarHorarioCurto(localizacaoFixa.atualizadaEm)
+    : null
+  const rotuloAcaoLocalizacao =
+    permissaoLocalizacao === "denied"
+      ? "Tentar ativar novamente"
+      : localizacaoGpsSalva
+        ? "Atualizar minha localização"
+        : "Ativar minha localização"
+
+  async function solicitarLocalizacaoAtual(options?: { silenceErrors?: boolean }) {
     if (typeof window === "undefined") return null
+    const silenceErrors = options?.silenceErrors ?? false
 
     if (!("geolocation" in navigator)) {
-      toast.error("Seu navegador não suporta geolocalização.")
+      const mensagem =
+        "Seu navegador não oferece localização automática. Cole um link do Apple Maps ou Google Maps."
+      setLocationErrorHint(mensagem)
+      if (!silenceErrors) {
+        toast.error(mensagem)
+      }
       return null
     }
 
     if (!window.isSecureContext && window.location.hostname !== "localhost") {
-      toast.error("A geolocalização precisa de HTTPS para funcionar fora do localhost.")
+      const mensagem =
+        "A localização automática precisa de HTTPS. Se preferir, cole um link do Apple Maps ou Google Maps."
+      setLocationErrorHint(mensagem)
+      if (!silenceErrors) {
+        toast.error(mensagem)
+      }
       return null
     }
 
     setGeoLoading(true)
+    setLocationErrorHint(null)
 
     try {
-      const coordenadas = await getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 12000,
-        maximumAge: 0,
-      })
-
+      const coordenadas = await getBestEffortCurrentPosition()
       return criarLocalizacaoSalva(coordenadas, "gps")
-    } catch {
-      toast.error("Não foi possível obter sua localização.")
+    } catch (error) {
+      const mensagem = getLocationErrorMessage(error)
+      setLocationErrorHint(mensagem)
+      if (!silenceErrors) {
+        toast.error(mensagem)
+      }
       return null
     } finally {
       setGeoLoading(false)
@@ -261,6 +427,7 @@ export function CartDrawer() {
     if (!localizacao) return
 
     salvarLocalizacao(localizacao)
+    setLocationErrorHint(null)
     setLinkAlternativo("")
     void trackEvent({
       type: "location_saved",
@@ -273,13 +440,14 @@ export function CartDrawer() {
 
   function salvarLinkComoFixo() {
     if (!coordenadasAlternativas || !linkAlternativo.trim()) {
-      toast.error("Cole um link válido do Google Maps antes de salvar.")
+      toast.error("Cole um link válido do Apple Maps, Google Maps ou coordenadas antes de salvar.")
       return
     }
 
     salvarLocalizacao(
       criarLocalizacaoSalva(coordenadasAlternativas, "manual", linkAlternativo.trim())
     )
+    setLocationErrorHint(null)
     setLinkAlternativo("")
     void trackEvent({
       type: "location_saved",
@@ -313,73 +481,164 @@ export function CartDrawer() {
     }
   }
 
-  async function enviarPedido() {
+  async function obterLocalizacaoParaEnvio() {
     if (linkAlternativoInvalido) {
-      toast.error("Cole um link válido do Google Maps ou use sua localização fixa.")
-      return
+      toast.message("Não consegui usar esse link. Vou enviar o pedido sem localização fixa.")
+      return null
     }
 
-    let localizacaoParaPedido = localizacaoAtiva
-
-    if (!localizacaoParaPedido) {
-      localizacaoParaPedido = await solicitarLocalizacaoAtual()
-      if (!localizacaoParaPedido) return
-
-      salvarLocalizacao(localizacaoParaPedido)
-      toast.success("Permissão concedida. A localização foi anexada ao pedido.")
+    if (coordenadasAlternativas && linkAlternativo.trim()) {
+      return criarLocalizacaoSalva(coordenadasAlternativas, "manual", linkAlternativo.trim())
     }
 
-    const entregaAtual = calcularPrecoEntrega(localizacaoParaPedido.coordenadas)
-    const totalAtual = subtotal + entregaAtual.preco
-    const pagamento = construirPagamento(totalAtual)
-    if (!pagamento) return
+    const temLocalizacaoSalva = Boolean(localizacaoFixa)
+    const deveAtualizarGpsAoEnviar =
+      !localizacaoManualSalva &&
+      permissaoLocalizacao !== "denied" &&
+      permissaoLocalizacao !== "unsupported"
 
-    const linhas = [
-      "Olá! Gostaria de fazer um pedido:",
-      "",
-      ...grupos.map(
-        (grupo) =>
-          `- ${grupo.quantidade}x ${descreverGrupo(grupo.nome, grupo.recheios)} (${BRL.format(
-            grupo.precoUnitario * grupo.quantidade
-          )})`
-      ),
-      "",
-      `Subtotal: ${BRL.format(subtotal)}`,
-      `Entrega: ${BRL.format(entregaAtual.preco)} (${entregaAtual.distanciaKm.toFixed(2)} km)`,
-      `Total: ${BRL.format(totalAtual)}`,
-      `Pagamento: ${formatarPagamento(pagamento)}`,
-    ]
+    if (deveAtualizarGpsAoEnviar) {
+      const localizacaoAtualizada = await solicitarLocalizacaoAtual({
+        silenceErrors: true,
+      })
 
-    if (pagamento.metodo === "dinheiro") {
-      linhas.push(`Precisa de troco: ${pagamento.precisaTroco ? "Sim" : "Não"}`)
-      if (pagamento.precisaTroco && pagamento.valorEntregue) {
-        linhas.push(`Troco para: ${BRL.format(pagamento.valorEntregue)}`)
+      if (localizacaoAtualizada) {
+        salvarLocalizacao(localizacaoAtualizada)
+        if (temLocalizacaoSalva) {
+          toast.success("Localização atualizada antes de enviar.")
+        } else {
+          toast.success("Localização anexada ao pedido.")
+        }
+        return localizacaoAtualizada
       }
-      if (pagamento.precisaTroco && pagamento.trocoCalculado) {
-        linhas.push(`Troco estimado: ${BRL.format(pagamento.trocoCalculado)}`)
+
+      if (localizacaoFixa) {
+        toast.message("Não consegui atualizar agora. Vou usar a localização salva.")
+        return localizacaoFixa
       }
+
+      return null
     }
 
-    linhas.push(
-      "",
-      `Localização: ${localizacaoParaPedido.link}`,
-      `Coordenadas: ${formatarCoordenadas(localizacaoParaPedido.coordenadas)}`
-    )
+    if (localizacaoFixa) {
+      return localizacaoFixa
+    }
 
-    await fetch("/api/leads", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
+    return solicitarLocalizacaoAtual({ silenceErrors: true })
+  }
+
+  async function enviarPedido() {
+    if (checkoutLoading) return
+
+    let redirecionado = false
+    setCheckoutLoading(true)
+
+    try {
+      const localizacaoParaPedido = await obterLocalizacaoParaEnvio()
+      const entregaAtual = localizacaoParaPedido
+        ? calcularPrecoEntrega(localizacaoParaPedido.coordenadas)
+        : null
+      const entregaFinal = entregaAtual
+        ? calcularEntregaComCupom({
+            subtotal,
+            originalDeliveryFee: entregaAtual.preco,
+            cupomEntrega,
+          })
+        : null
+      const totalAtual = subtotal + (entregaFinal?.taxaFinal ?? 0)
+      const pagamento = construirPagamento(totalAtual)
+      if (!pagamento) return
+
+      const linhas = [
+        "Olá! Gostaria de fazer um pedido:",
+        "",
+        ...grupos.map(
+          (grupo) =>
+            `- ${grupo.quantidade}x ${descreverGrupo(grupo.nome, grupo.recheios)} (${BRL.format(
+              grupo.precoUnitario * grupo.quantidade
+            )})`
+        ),
+        "",
+        `Subtotal: ${BRL.format(subtotal)}`,
+      ]
+
+      if (entregaFinal?.cupomAtivo) {
+        linhas.push(
+          entregaFinal.elegivel
+            ? `Cupom de entrega: ${entregaFinal.codigoCupom} aplicado (mínimo de ${BRL.format(
+                DELIVERY_FREE_COUPON_MIN_SUBTOTAL
+              )} atingido)`
+            : `Cupom de entrega: ${entregaFinal.codigoCupom} ativo, mas o pedido ainda não atingiu ${BRL.format(
+                DELIVERY_FREE_COUPON_MIN_SUBTOTAL
+              )}`
+        )
+      } else if (entregaComCupom.cupomAtivo) {
+        linhas.push(
+          subtotal >= DELIVERY_FREE_COUPON_MIN_SUBTOTAL
+            ? `Cupom de entrega: ${entregaComCupom.codigoCupom} ativo. A confirmação final depende da localização fixa.`
+            : `Cupom de entrega: ${entregaComCupom.codigoCupom} ativo, mas o pedido ainda não atingiu ${BRL.format(
+                DELIVERY_FREE_COUPON_MIN_SUBTOTAL
+              )}`
+        )
+      }
+
+      if (entregaAtual && entregaFinal?.elegivel) {
+        linhas.push(
+          `Entrega original: ${BRL.format(entregaFinal.taxaOriginal ?? entregaAtual.preco)} (${entregaAtual.distanciaKm.toFixed(2)} km)`,
+          `Desconto na entrega: -${BRL.format(entregaFinal.desconto)}`,
+          "Entrega final: Grátis"
+        )
+      } else if (entregaAtual && entregaFinal) {
+        linhas.push(
+          `Entrega: ${BRL.format(entregaFinal.taxaFinal)} (${entregaAtual.distanciaKm.toFixed(2)} km)`
+        )
+        if (entregaFinal.cupomAtivo && entregaFinal.faltaParaMinimo > 0) {
+          linhas.push(`Falta para entrega grátis: ${BRL.format(entregaFinal.faltaParaMinimo)}`)
+        }
+      } else {
+        linhas.push("Entrega: a confirmar após a localização fixa")
+      }
+
+      linhas.push(
+        `${localizacaoParaPedido ? "Total" : "Total parcial"}: ${BRL.format(totalAtual)}`,
+        `Pagamento: ${formatarPagamento(pagamento)}`
+      )
+
+      if (pagamento.metodo === "dinheiro") {
+        linhas.push(`Precisa de troco: ${pagamento.precisaTroco ? "Sim" : "Não"}`)
+        if (pagamento.precisaTroco && pagamento.valorEntregue) {
+          linhas.push(`Troco para: ${BRL.format(pagamento.valorEntregue)}`)
+        }
+        if (pagamento.precisaTroco && pagamento.trocoCalculado) {
+          linhas.push(
+            `${
+              localizacaoParaPedido ? "Troco estimado" : "Troco estimado sobre o subtotal"
+            }: ${BRL.format(pagamento.trocoCalculado)}`
+          )
+        }
+      }
+
+      if (localizacaoParaPedido) {
+        linhas.push(
+          "",
+          `Localização: ${localizacaoParaPedido.link}`,
+          `Coordenadas: ${formatarCoordenadas(localizacaoParaPedido.coordenadas)}`,
+          MENSAGEM_COM_LOCALIZACAO
+        )
+      } else {
+        linhas.push("", MENSAGEM_SEM_LOCALIZACAO)
+      }
+
+      postJsonInBackground("/api/leads", {
         sessionId,
         subtotal,
-        deliveryFee: entregaAtual.preco,
+        deliveryFee: entregaFinal?.taxaFinal ?? 0,
+        originalDeliveryFee: entregaFinal?.taxaOriginal ?? entregaAtual?.preco ?? null,
         total: totalAtual,
         whatsappNumber: WHATSAPP_NUMBER,
-        locationUrl: localizacaoParaPedido.link,
-        latitude: localizacaoParaPedido.coordenadas.lat,
-        longitude: localizacaoParaPedido.coordenadas.lng,
+        locationUrl: localizacaoParaPedido?.link ?? null,
+        latitude: localizacaoParaPedido?.coordenadas.lat ?? null,
+        longitude: localizacaoParaPedido?.coordenadas.lng ?? null,
         paymentMethod: pagamento.metodo,
         needsChange:
           pagamento.metodo === "dinheiro" ? pagamento.precisaTroco ?? null : null,
@@ -387,6 +646,13 @@ export function CartDrawer() {
           pagamento.metodo === "dinheiro" ? pagamento.valorEntregue ?? null : null,
         changeAmount:
           pagamento.metodo === "dinheiro" ? pagamento.trocoCalculado ?? null : null,
+        couponCode: entregaFinal?.codigoCupom ?? entregaComCupom.codigoCupom,
+        couponDiscount: entregaFinal?.desconto || null,
+        couponMinimumSubtotal: (entregaFinal?.cupomAtivo ?? entregaComCupom.cupomAtivo)
+          ? DELIVERY_FREE_COUPON_MIN_SUBTOTAL
+          : null,
+        couponEligible: entregaFinal?.cupomAtivo ? entregaFinal.elegivel : null,
+        deliveryPendingQuote: localizacaoParaPedido ? null : true,
         items: grupos.map((grupo) => ({
           productId: grupo.productId,
           productName: grupo.nome,
@@ -394,40 +660,47 @@ export function CartDrawer() {
           unitPrice: grupo.precoUnitario,
           fillings: grupo.recheios,
         })),
-      }),
-    }).catch(() => undefined)
+      })
 
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(linhas.join("\n"))}`
+      const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(linhas.join("\n"))}`
 
-    void trackEvent({
-      type: "whatsapp_checkout_clicked",
-      value: totalAtual,
-      metadata: {
-        items: grupos.length,
+      void trackEvent({
+        type: "whatsapp_checkout_clicked",
+        value: totalAtual,
+        metadata: {
+          items: grupos.length,
+          paymentMethod: pagamento.metodo,
+          deliveryDistanceKm: entregaAtual?.distanciaKm ?? null,
+          deliveryCouponCode: entregaFinal?.codigoCupom ?? entregaComCupom.codigoCupom,
+          deliveryDiscount: entregaFinal?.desconto ?? null,
+          deliveryPendingQuote: localizacaoParaPedido ? null : true,
+        },
+      })
+
+      reportMetaLead({
+        value: totalAtual,
+        currency: "BRL",
         paymentMethod: pagamento.metodo,
-        deliveryDistanceKm: entregaAtual.distanciaKm,
-      },
-    })
+        items: grupos.map((grupo) => ({
+          id: grupo.productId,
+          quantity: grupo.quantidade,
+          itemPrice: grupo.precoUnitario,
+        })),
+      })
 
-    reportMetaLead({
-      value: totalAtual,
-      currency: "BRL",
-      paymentMethod: pagamento.metodo,
-      items: grupos.map((grupo) => ({
-        id: grupo.productId,
-        quantity: grupo.quantidade,
-        itemPrice: grupo.precoUnitario,
-      })),
-    })
+      reportGoogleAdsConversion({
+        value: totalAtual,
+        currency: "BRL",
+        transactionId: `${sessionId ?? "guest"}-${Date.now()}`,
+      })
 
-    reportGoogleAdsConversion({
-      value: totalAtual,
-      currency: "BRL",
-      transactionId: `${sessionId ?? "guest"}-${Date.now()}`,
-      onComplete: () => {
-        window.location.href = url
-      },
-    })
+      redirecionado = true
+      window.location.assign(url)
+    } finally {
+      if (!redirecionado) {
+        setCheckoutLoading(false)
+      }
+    }
   }
 
   if (!hidratado || itens.length === 0) {
@@ -620,14 +893,19 @@ export function CartDrawer() {
                       />
                       {trocoInvalido ? (
                         <p className="text-sm text-destructive">
-                          Informe um valor maior que o total para calcular o troco.
+                          Informe um valor maior que o {entrega ? "total" : "subtotal"} para calcular o troco.
                         </p>
                       ) : trocoCalculado !== null ? (
                         <p className="text-sm text-muted-foreground">
-                          Troco estimado:{" "}
+                          {entrega ? "Troco estimado" : "Troco estimado sobre o subtotal"}:{" "}
                           <span className="font-semibold text-foreground">
                             {BRL.format(trocoCalculado)}
                           </span>
+                        </p>
+                      ) : null}
+                      {!entrega ? (
+                        <p className="text-sm text-muted-foreground">
+                          A taxa de entrega será confirmada depois que a localização fixa for enviada no WhatsApp.
                         </p>
                       ) : null}
                     </div>
@@ -636,33 +914,133 @@ export function CartDrawer() {
               ) : null}
             </section>
 
+            {false ? (
+              <section className="rounded-[28px] border border-border bg-card/85 p-4 shadow-[0_14px_30px_rgba(95,42,15,0.05)]">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold text-foreground">Cupom de entrega</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Entrega grátis com subtotal mínimo de {BRL.format(DELIVERY_FREE_COUPON_MIN_SUBTOTAL)}.
+                  </p>
+                </div>
+                <Badge variant={entregaComCupom.cupomAtivo ? "success" : "outline"}>
+                  {entregaComCupom.cupomAtivo ? cupomEntrega?.codigo : "Inativo"}
+                </Badge>
+              </div>
+
+              {entregaComCupom.cupomAtivo ? (
+                <div className="space-y-3 rounded-[24px] border border-border bg-background/80 p-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">
+                      {entregaComCupom.elegivel
+                        ? "Subtotal elegível. A taxa de entrega será zerada neste pedido."
+                        : `Faltam ${BRL.format(entregaComCupom.faltaParaMinimo)} para liberar a entrega grátis.`}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Se o subtotal cair abaixo de {BRL.format(DELIVERY_FREE_COUPON_MIN_SUBTOTAL)}, a
+                      entrega volta a ser cobrada normalmente.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 rounded-3xl border border-border bg-card px-4 py-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Status</span>
+                      <span className="font-medium text-foreground">Aplicado via link</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Regra</span>
+                      <span className="font-medium text-foreground">
+                        A partir de {BRL.format(DELIVERY_FREE_COUPON_MIN_SUBTOTAL)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Subtotal atual</span>
+                      <span className="font-medium text-foreground">{BRL.format(subtotal)}</span>
+                    </div>
+                    {entrega ? (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Taxa antes do cupom</span>
+                        <span className="font-medium text-foreground">
+                          {BRL.format(entregaComCupom.taxaOriginal ?? entrega?.preco ?? 0)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <Button variant="ghost" onClick={removerCupomEntrega} className="rounded-2xl">
+                    Remover cupom
+                  </Button>
+                </div>
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-border bg-background/75 p-4 text-sm text-muted-foreground">
+                  Abra o link promocional para aplicar automaticamente o cupom de entrega grátis.
+                </div>
+              )}
+              </section>
+            ) : null}
+
             <section className="rounded-[28px] border border-border bg-card/85 p-4 shadow-[0_14px_30px_rgba(95,42,15,0.05)]">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h3 className="font-semibold text-foreground">Localização do pedido</h3>
                   <p className="text-sm text-muted-foreground">
-                    A permissão é pedida uma vez e a localização fixa pode ser reutilizada.
+                    Ative sua localização para calcular a entrega com mais precisão. No envio, tentamos atualizar novamente automaticamente, mas o pedido também pode seguir sem localização.
                   </p>
                 </div>
-                <Badge variant="outline">
-                  {permissaoLocalizacao === "granted"
-                    ? "Permitida"
-                    : permissaoLocalizacao === "denied"
-                      ? "Bloqueada"
-                      : permissaoLocalizacao === "prompt"
-                        ? "Pendente"
-                        : "Sem suporte"}
-                </Badge>
+                <Badge variant="outline">{getLocationStatusLabel(permissaoLocalizacao)}</Badge>
+              </div>
+
+              {mostrarAjudaLocalizacao ? (
+                <div className="mb-4 rounded-[24px] border border-[#e9c78a] bg-[linear-gradient(180deg,rgba(255,248,231,0.9),rgba(255,241,208,0.9))] px-4 py-3 text-sm text-foreground/82">
+                  <p className="font-medium text-foreground">{descricaoAjudaLocalizacao}</p>
+                  <p className="mt-1 text-muted-foreground">
+                    {ambienteLocalizacao.ios
+                      ? "Se a permissão não abrir aqui, prefira Safari. Links do app Mapas também funcionam."
+                      : "Você também pode colar coordenadas no formato -12.123456, -38.123456."}
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="mb-4 rounded-[24px] border border-border bg-background/80 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Ativação automática</p>
+                    <p className="text-sm text-muted-foreground">
+                      Toque para permitir o GPS. Se já estiver ativo, atualizamos sua posição agora e também antes de enviar. Se preferir, você pode mandar o pedido sem essa etapa.
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    loading={geoLoading}
+                    onClick={salvarLocalizacaoAtual}
+                    className="rounded-2xl sm:min-w-[220px]"
+                  >
+                    {geoLoading ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <MapPin className="size-4" />
+                    )}
+                    {rotuloAcaoLocalizacao}
+                  </Button>
+                </div>
               </div>
 
               {localizacaoFixa ? (
                 <div className="mb-4 rounded-3xl border border-border bg-background px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="font-medium text-foreground">Localização fixa salva</div>
+                      <div className="font-medium text-foreground">
+                        {localizacaoGpsSalva ? "Localização automática salva" : "Localização fixa salva"}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {formatarCoordenadas(localizacaoFixa.coordenadas)}
                       </div>
+                      {horarioLocalizacaoSalva ? (
+                        <div className="text-xs text-muted-foreground">
+                          Atualizada às {horarioLocalizacaoSalva}
+                        </div>
+                      ) : null}
                     </div>
                     <Badge variant="secondary">
                       {localizacaoFixa.origem === "gps" ? "GPS" : "Link"}
@@ -672,10 +1050,17 @@ export function CartDrawer() {
               ) : null}
 
               <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Ou informe manualmente</p>
+                  <p className="text-sm text-muted-foreground">
+                    Cole um link de mapa caso prefira revisar o endereço sem usar o GPS. Se não informar agora, você ainda poderá enviar o pedido.
+                  </p>
+                </div>
+
                 <Textarea
                   value={linkAlternativo}
                   onChange={(event) => setLinkAlternativo(event.target.value)}
-                  placeholder="Cole um link do Google Maps para usar outra localização neste pedido."
+                  placeholder="Cole um link do Apple Maps, Google Maps ou as coordenadas para usar outra localização."
                   resize="y"
                   invalid={linkAlternativoInvalido}
                   rows={4}
@@ -683,37 +1068,19 @@ export function CartDrawer() {
 
                 {linkAlternativoInvalido ? (
                   <p className="text-sm text-destructive">
-                    Não consegui ler as coordenadas desse link. Cole um link do Google Maps com a
-                    localização.
+                    Não consegui ler as coordenadas desse link. Cole um link do Apple Maps, Google Maps ou as coordenadas.
                   </p>
                 ) : null}
 
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    loading={geoLoading}
-                    onClick={salvarLocalizacaoAtual}
-                    className="rounded-2xl"
-                  >
-                    {geoLoading ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <MapPin className="size-4" />
-                    )}
-                    Usar minha localização fixa
-                  </Button>
-
-                  <Button
-                    variant="secondary"
-                    fullWidth
-                    onClick={salvarLinkComoFixo}
-                    disabled={!coordenadasAlternativas}
-                    className="rounded-2xl"
-                  >
-                    Salvar link como fixo
-                  </Button>
-                </div>
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={salvarLinkComoFixo}
+                  disabled={!coordenadasAlternativas}
+                  className="rounded-2xl"
+                >
+                  Salvar link como fixo
+                </Button>
 
                 {localizacaoFixa ? (
                   <Button variant="ghost" onClick={limparLocalizacao} className="rounded-2xl">
@@ -729,7 +1096,7 @@ export function CartDrawer() {
                 {entrega ? (
                   <Badge variant="secondary">{entrega.distanciaKm.toFixed(2)} km</Badge>
                 ) : (
-                  <Badge variant="outline">Sem localização</Badge>
+                  <Badge variant="outline">Entrega a confirmar</Badge>
                 )}
               </div>
 
@@ -739,9 +1106,37 @@ export function CartDrawer() {
                   <span className="font-medium text-foreground">{BRL.format(subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Entrega</span>
+                  <span className="text-muted-foreground">
+                    {entregaComCupom.cupomAtivo ? "Entrega original" : "Entrega"}
+                  </span>
                   <span className="font-medium text-foreground">
-                    {entrega ? BRL.format(entrega.preco) : "Defina a localização"}
+                    {entrega
+                      ? BRL.format(entregaComCupom.taxaOriginal ?? entrega.preco)
+                      : "A confirmar após localização"}
+                  </span>
+                </div>
+                {entregaComCupom.cupomAtivo ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Cupom de entrega</span>
+                    <span className="font-medium text-foreground">
+                      {entrega
+                        ? entregaComCupom.elegivel
+                          ? `-${BRL.format(entregaComCupom.desconto)}`
+                          : `Faltam ${BRL.format(entregaComCupom.faltaParaMinimo)}`
+                        : subtotal >= DELIVERY_FREE_COUPON_MIN_SUBTOTAL
+                          ? "Ativo, falta confirmar"
+                          : `Faltam ${BRL.format(entregaComCupom.faltaParaMinimo)}`}
+                    </span>
+                  </div>
+                ) : null}
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Entrega final</span>
+                  <span className="font-medium text-foreground">
+                    {entrega && entregaComCupom.elegivel
+                      ? "Grátis"
+                      : entrega
+                        ? BRL.format(entregaComCupom.taxaFinal)
+                        : "A confirmar no WhatsApp"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -751,17 +1146,30 @@ export function CartDrawer() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between border-t border-border pt-2 text-base">
-                  <span className="font-semibold text-foreground">Total</span>
-                  <span className="font-semibold text-foreground">{BRL.format(total)}</span>
+                  <span className="font-semibold text-foreground">
+                    {entrega ? "Total" : "Total parcial"}
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {BRL.format(entrega ? total : subtotal)}
+                  </span>
                 </div>
+              </div>
+
+              <div className="mt-4 rounded-[24px] border border-border bg-background/80 p-4 text-sm">
+                <p className="font-medium text-foreground">
+                  {entrega ? "Antes de enviar" : "Se preferir enviar sem localização"}
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  {entrega ? MENSAGEM_COM_LOCALIZACAO : MENSAGEM_SEM_LOCALIZACAO}
+                </p>
               </div>
             </section>
           </div>
 
           <div className="grid gap-2 border-t border-border pt-4 sm:grid-cols-[1fr_auto_auto]">
-            <Button fullWidth onClick={enviarPedido} className="rounded-2xl">
-              <Send className="size-4" />
-              Enviar pedido no WhatsApp
+            <Button fullWidth onClick={enviarPedido} loading={checkoutLoading} className="rounded-2xl">
+              {checkoutLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              {checkoutLoading ? "Abrindo WhatsApp..." : "Enviar pedido no WhatsApp"}
             </Button>
             <Button variant="outline" onClick={limparCarrinho} className="rounded-2xl">
               Limpar

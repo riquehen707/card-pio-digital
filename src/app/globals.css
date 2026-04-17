@@ -119,6 +119,7 @@
 
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -131,7 +132,7 @@
       radial-gradient(circle at bottom right, rgba(243, 190, 74, 0.2), transparent 24%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.36), transparent 38%),
       linear-gradient(180deg, rgba(255, 251, 244, 1), rgba(255, 245, 226, 1));
-    background-attachment: fixed;
+    background-attachment: scroll;
   }
 
   ::selection {
@@ -171,5 +172,13 @@
   .mobile-category-nav::-webkit-scrollbar,
   .mobile-product-carousel::-webkit-scrollbar {
     display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  @layer base {
+    body {
+      background-attachment: fixed;
+    }
   }
 }

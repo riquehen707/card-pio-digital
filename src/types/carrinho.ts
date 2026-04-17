@@ -19,6 +19,12 @@ export type LocalizacaoSalva = {
   atualizadaEm: string
 }
 
+export type CupomEntregaAtivo = {
+  codigo: string
+  origem: "link"
+  aplicadoEm: string
+}
+
 export type PagamentoPedido = {
   metodo: MetodoPagamento
   precisaTroco?: boolean | null
