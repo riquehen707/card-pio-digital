@@ -21,7 +21,7 @@ export const GOOGLE_ADS_WHATSAPP_CONVERSION_ID =
 export const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "3877789089189571"
 
 export const WHATSAPP_NUMBER =
-  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "") || "5574999674692"
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "") || "5575983675164"
 
 export const COORDENADAS_LOJA: Coordenadas = {
   lat: -12.1339986,

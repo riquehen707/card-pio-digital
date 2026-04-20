@@ -50,9 +50,9 @@ const BRL = new Intl.NumberFormat("pt-BR", {
 })
 
 const MENSAGEM_SEM_LOCALIZACAO =
-  "Por favor envie a localização fixa após enviar o pedido"
+  "Localização pendente. Por favor, envie a localização fixa após concluir o pedido."
 const MENSAGEM_COM_LOCALIZACAO =
-  "Lembre-se de verificar se seu endereço está correto e com o número da casa, deixe seu número de contato para o entregador também"
+  "Confira se o endereço está completo com número da casa e informe um telefone de contato para facilitar a entrega."
 
 const paymentOptions: Array<{
   id: MetodoPagamento
@@ -187,11 +187,6 @@ function criarLocalizacaoSalva(
   } satisfies LocalizacaoSalva
 }
 
-function descreverGrupo(nome: string, recheios: string[]) {
-  if (recheios.length === 0) return `${nome} sem adicionais`
-  return `${nome} com ${recheios.join(", ")}`
-}
-
 function formatarPagamento(pagamento: PagamentoPedido) {
   switch (pagamento.metodo) {
     case "pix":
@@ -221,6 +216,16 @@ function formatarHorarioCurto(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(data)
+}
+
+function formatarDataHoraPedido(value = new Date()) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(value)
 }
 
 export function CartDrawer() {
@@ -549,21 +554,18 @@ export function CartDrawer() {
       const pagamento = construirPagamento(totalAtual)
       if (!pagamento) return
 
-      const linhas = [
-        "Olá! Gostaria de fazer um pedido:",
-        "",
-        ...grupos.map(
-          (grupo) =>
-            `- ${grupo.quantidade}x ${descreverGrupo(grupo.nome, grupo.recheios)} (${BRL.format(
-              grupo.precoUnitario * grupo.quantidade
-            )})`
-        ),
-        "",
-        `Subtotal: ${BRL.format(subtotal)}`,
-      ]
+      const linhasItens = grupos.flatMap((grupo, index) => [
+        `${index + 1}. ${grupo.quantidade}x ${grupo.nome}`,
+        `   Detalhes: ${
+          grupo.recheios.length > 0 ? grupo.recheios.join(", ") : "Sem adicionais"
+        }`,
+        `   Valor: ${BRL.format(grupo.precoUnitario * grupo.quantidade)}`,
+      ])
+
+      const linhasResumo = [`Subtotal: ${BRL.format(subtotal)}`]
 
       if (entregaFinal?.cupomAtivo) {
-        linhas.push(
+        linhasResumo.push(
           entregaFinal.elegivel
             ? `Cupom de entrega: ${entregaFinal.codigoCupom} aplicado (mínimo de ${BRL.format(
                 DELIVERY_FREE_COUPON_MIN_SUBTOTAL
@@ -573,7 +575,7 @@ export function CartDrawer() {
               )}`
         )
       } else if (entregaComCupom.cupomAtivo) {
-        linhas.push(
+        linhasResumo.push(
           subtotal >= DELIVERY_FREE_COUPON_MIN_SUBTOTAL
             ? `Cupom de entrega: ${entregaComCupom.codigoCupom} ativo. A confirmação final depende da localização fixa.`
             : `Cupom de entrega: ${entregaComCupom.codigoCupom} ativo, mas o pedido ainda não atingiu ${BRL.format(
@@ -583,34 +585,37 @@ export function CartDrawer() {
       }
 
       if (entregaAtual && entregaFinal?.elegivel) {
-        linhas.push(
+        linhasResumo.push(
           `Entrega original: ${BRL.format(entregaFinal.taxaOriginal ?? entregaAtual.preco)} (${entregaAtual.distanciaKm.toFixed(2)} km)`,
           `Desconto na entrega: -${BRL.format(entregaFinal.desconto)}`,
           "Entrega final: Grátis"
         )
       } else if (entregaAtual && entregaFinal) {
-        linhas.push(
+        linhasResumo.push(
           `Entrega: ${BRL.format(entregaFinal.taxaFinal)} (${entregaAtual.distanciaKm.toFixed(2)} km)`
         )
         if (entregaFinal.cupomAtivo && entregaFinal.faltaParaMinimo > 0) {
-          linhas.push(`Falta para entrega grátis: ${BRL.format(entregaFinal.faltaParaMinimo)}`)
+          linhasResumo.push(
+            `Falta para entrega grátis: ${BRL.format(entregaFinal.faltaParaMinimo)}`
+          )
         }
       } else {
-        linhas.push("Entrega: a confirmar após a localização fixa")
+        linhasResumo.push("Entrega: a confirmar após a localização fixa")
       }
 
-      linhas.push(
-        `${localizacaoParaPedido ? "Total" : "Total parcial"}: ${BRL.format(totalAtual)}`,
-        `Pagamento: ${formatarPagamento(pagamento)}`
+      linhasResumo.push(
+        `${localizacaoParaPedido ? "Total" : "Total parcial"}: ${BRL.format(totalAtual)}`
       )
 
+      const linhasPagamento = [`Método: ${formatarPagamento(pagamento)}`]
+
       if (pagamento.metodo === "dinheiro") {
-        linhas.push(`Precisa de troco: ${pagamento.precisaTroco ? "Sim" : "Não"}`)
+        linhasPagamento.push(`Precisa de troco: ${pagamento.precisaTroco ? "Sim" : "Não"}`)
         if (pagamento.precisaTroco && pagamento.valorEntregue) {
-          linhas.push(`Troco para: ${BRL.format(pagamento.valorEntregue)}`)
+          linhasPagamento.push(`Troco para: ${BRL.format(pagamento.valorEntregue)}`)
         }
         if (pagamento.precisaTroco && pagamento.trocoCalculado) {
-          linhas.push(
+          linhasPagamento.push(
             `${
               localizacaoParaPedido ? "Troco estimado" : "Troco estimado sobre o subtotal"
             }: ${BRL.format(pagamento.trocoCalculado)}`
@@ -618,16 +623,31 @@ export function CartDrawer() {
         }
       }
 
-      if (localizacaoParaPedido) {
-        linhas.push(
-          "",
-          `Localização: ${localizacaoParaPedido.link}`,
-          `Coordenadas: ${formatarCoordenadas(localizacaoParaPedido.coordenadas)}`,
-          MENSAGEM_COM_LOCALIZACAO
-        )
-      } else {
-        linhas.push("", MENSAGEM_SEM_LOCALIZACAO)
-      }
+      const linhasEntrega = localizacaoParaPedido
+        ? [
+            "Localização fixa recebida.",
+            `Link do mapa: ${localizacaoParaPedido.link}`,
+            `Coordenadas: ${formatarCoordenadas(localizacaoParaPedido.coordenadas)}`,
+            `Observações: ${MENSAGEM_COM_LOCALIZACAO}`,
+          ]
+        : ["Localização fixa pendente.", `Observações: ${MENSAGEM_SEM_LOCALIZACAO}`]
+
+      const linhas = [
+        "*NOVO PEDIDO*",
+        `Data: ${formatarDataHoraPedido()}`,
+        "",
+        "*ITENS*",
+        ...linhasItens,
+        "",
+        "*RESUMO*",
+        ...linhasResumo,
+        "",
+        "*PAGAMENTO*",
+        ...linhasPagamento,
+        "",
+        "*ENTREGA*",
+        ...linhasEntrega,
+      ]
 
       postJsonInBackground("/api/leads", {
         sessionId,
