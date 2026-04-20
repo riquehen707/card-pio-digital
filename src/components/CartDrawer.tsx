@@ -33,7 +33,7 @@ import {
   extrairCoordenadasDoLink,
   formatarCoordenadas,
 } from "@/lib/maps"
-import { reportMetaLead } from "@/lib/metaPixel"
+import { reportMetaInitiateCheckout, reportMetaLead } from "@/lib/metaPixel"
 import { postJsonInBackground } from "@/lib/postJsonInBackground"
 import { WHATSAPP_NUMBER } from "@/lib/site"
 import { cn } from "@/lib/utils"
@@ -695,6 +695,17 @@ export function CartDrawer() {
           deliveryDiscount: entregaFinal?.desconto ?? null,
           deliveryPendingQuote: localizacaoParaPedido ? null : true,
         },
+      })
+
+      reportMetaInitiateCheckout({
+        value: totalAtual,
+        currency: "BRL",
+        paymentMethod: pagamento.metodo,
+        items: grupos.map((grupo) => ({
+          id: grupo.productId,
+          quantity: grupo.quantidade,
+          itemPrice: grupo.precoUnitario,
+        })),
       })
 
       reportMetaLead({

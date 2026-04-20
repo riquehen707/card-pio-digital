@@ -15,10 +15,10 @@ type ReportMetaAddToCartOptions = {
   productId: string
   productName: string
   quantity?: number
-  value: number
+  unitPrice: number
 }
 
-type ReportMetaLeadOptions = {
+type ReportMetaCheckoutOptions = {
   currency?: string
   items: MetaCartItem[]
   paymentMethod?: string
@@ -34,9 +34,11 @@ export function reportMetaAddToCart({
   productId,
   productName,
   quantity = 1,
-  value,
+  unitPrice,
 }: ReportMetaAddToCartOptions) {
   if (!canTrackMetaPixel()) return false
+
+  const value = unitPrice * quantity
 
   window.fbq!("track", "AddToCart", {
     currency: "BRL",
@@ -49,7 +51,7 @@ export function reportMetaAddToCart({
       {
         id: productId,
         quantity,
-        item_price: value,
+        item_price: unitPrice,
       },
     ],
     num_items: quantity,
@@ -58,15 +60,13 @@ export function reportMetaAddToCart({
   return true
 }
 
-export function reportMetaLead({
+function buildCheckoutPayload({
   currency = "BRL",
   items,
   paymentMethod,
   value,
-}: ReportMetaLeadOptions) {
-  if (!canTrackMetaPixel()) return false
-
-  window.fbq!("track", "Lead", {
+}: ReportMetaCheckoutOptions) {
+  return {
     currency,
     value,
     content_ids: items.map((item) => item.id),
@@ -80,7 +80,21 @@ export function reportMetaLead({
     num_items: items.reduce((total, item) => total + item.quantity, 0),
     order_source: "whatsapp",
     payment_method: paymentMethod,
-  })
+  }
+}
+
+export function reportMetaInitiateCheckout(options: ReportMetaCheckoutOptions) {
+  if (!canTrackMetaPixel()) return false
+
+  window.fbq!("track", "InitiateCheckout", buildCheckoutPayload(options))
+
+  return true
+}
+
+export function reportMetaLead(options: ReportMetaCheckoutOptions) {
+  if (!canTrackMetaPixel()) return false
+
+  window.fbq!("track", "Lead", buildCheckoutPayload(options))
 
   return true
 }

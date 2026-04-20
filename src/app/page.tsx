@@ -84,7 +84,7 @@ export default function Home() {
       productId: produto.id,
       productName: produto.nome,
       category: produto.categoria,
-      value:
+      unitPrice:
         produto.precoPromocional && produto.precoPromocional < produto.preco
           ? produto.precoPromocional
           : produto.preco,
