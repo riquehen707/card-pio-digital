@@ -1,6 +1,12 @@
 import "server-only"
 
 import { db } from "@/lib/db"
+import {
+  formatOrderLine,
+  groupOrderItems,
+  readFillingsFromUnknown,
+} from "@/lib/order-formatting"
+import { normalizeOrderReference } from "@/lib/order-reference"
 
 function daysAgo(days: number) {
   const value = new Date()
@@ -17,9 +23,62 @@ function decimalToNumber(value: { toNumber(): number } | null | undefined) {
   return value ? value.toNumber() : 0
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function readStringField(value: unknown, field: string) {
+  if (!isRecord(value)) return null
+
+  const fieldValue = value[field]
+  return typeof fieldValue === "string" && fieldValue.trim() ? fieldValue.trim() : null
+}
+
+function getPaymentMethodLabel(value: string | null) {
+  switch (value) {
+    case "pix":
+      return "Pix"
+    case "cartao":
+      return "Cartao"
+    case "dinheiro":
+      return "Dinheiro"
+    default:
+      return "Nao informado"
+  }
+}
+
+function buildSalesReport(rows: Array<{
+  createdAt: Date
+  total: { toNumber(): number }
+  deliveryFee: { toNumber(): number }
+  items: Array<{ quantity: number }>
+}>) {
+  const orders = rows.length
+  const revenue = rows.reduce((acc, row) => acc + decimalToNumber(row.total), 0)
+  const deliveryFees = rows.reduce((acc, row) => acc + decimalToNumber(row.deliveryFee), 0)
+  const itemsSold = rows.reduce(
+    (acc, row) => acc + row.items.reduce((itemsAcc, item) => itemsAcc + item.quantity, 0),
+    0
+  )
+
+  return {
+    orders,
+    revenue,
+    deliveryFees,
+    itemsSold,
+    averageTicket: orders > 0 ? revenue / orders : 0,
+  }
+}
+
 export async function getAdminDashboardData() {
   const last30Days = daysAgo(29)
   const last14Days = daysAgo(13)
+  const last7Days = daysAgo(6)
+  const todayStart = daysAgo(0)
+  const brlFormatter = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  })
 
   const [
     totalSessions,
@@ -28,6 +87,7 @@ export async function getAdminDashboardData() {
     totalLeads,
     leadRevenueAggregate,
     latestLeads,
+    salesReportRows,
     topProductRows,
     campaignRows,
     googleAdsCampaignRows,
@@ -83,6 +143,23 @@ export async function getAdminDashboardData() {
       take: 8,
       include: {
         items: true,
+      },
+    }),
+    db.lead.findMany({
+      where: {
+        createdAt: {
+          gte: last30Days,
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        items: {
+          select: {
+            quantity: true,
+          },
+        },
       },
     }),
     db.leadItem.findMany({
@@ -283,6 +360,41 @@ export async function getAdminDashboardData() {
 
   const googleAdsCampaigns = Array.from(googleAdsCampaignMap.values()).sort((a, b) => b.spend - a.spend)
 
+  const paymentMethodMap = new Map<
+    string,
+    {
+      method: string
+      orders: number
+      revenue: number
+    }
+  >()
+
+  salesReportRows.forEach((row) => {
+    const rawPaymentMethod = readStringField(row.rawPayload, "paymentMethod")
+    const method = getPaymentMethodLabel(rawPaymentMethod)
+    const current = paymentMethodMap.get(method)
+
+    if (current) {
+      current.orders += 1
+      current.revenue += decimalToNumber(row.total)
+      return
+    }
+
+    paymentMethodMap.set(method, {
+      method,
+      orders: 1,
+      revenue: decimalToNumber(row.total),
+    })
+  })
+
+  const salesToday = buildSalesReport(
+    salesReportRows.filter((row) => row.createdAt >= todayStart)
+  )
+  const salesLast7Days = buildSalesReport(
+    salesReportRows.filter((row) => row.createdAt >= last7Days)
+  )
+  const salesLast30Days = buildSalesReport(salesReportRows)
+
   const googleAdsTotals = googleAdsCampaigns.reduce(
     (acc, row) => {
       acc.impressions += row.impressions
@@ -315,19 +427,40 @@ export async function getAdminDashboardData() {
       googleAdsConversions: googleAdsTotals.conversions,
       googleAdsConversionValue: googleAdsTotals.conversionsValue,
     },
-      latestLeads: latestLeads.map((lead) => ({
-      id: lead.id,
-      createdAt: lead.createdAt,
-      total: decimalToNumber(lead.total),
-      utmCampaign: lead.utmCampaign,
-      gclid: lead.gclid,
-      itemCount: lead.items.reduce((acc, item) => acc + item.quantity, 0),
-      locationUrl: lead.locationUrl,
-      items: lead.items.map((item) => ({
-        name: item.productName,
-        quantity: item.quantity,
-      })),
-    })),
+    salesReports: {
+      today: salesToday,
+      last7Days: salesLast7Days,
+      last30Days: salesLast30Days,
+      paymentMethods: Array.from(paymentMethodMap.values()).sort((a, b) => b.orders - a.orders),
+    },
+    latestLeads: latestLeads.map((lead) => {
+      const groupedLeadItems = groupOrderItems(
+        lead.items.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: decimalToNumber(item.unitPrice),
+          category: item.category,
+          fillings: readFillingsFromUnknown(item.fillings),
+        }))
+      )
+      const orderReference =
+        normalizeOrderReference(readStringField(lead.rawPayload, "orderReference")) ?? lead.id.slice(-6).toUpperCase()
+      const paymentMethod = getPaymentMethodLabel(readStringField(lead.rawPayload, "paymentMethod"))
+
+      return {
+        id: lead.id,
+        orderReference,
+        createdAt: lead.createdAt,
+        total: decimalToNumber(lead.total),
+        utmCampaign: lead.utmCampaign,
+        gclid: lead.gclid,
+        paymentMethod,
+        itemCount: groupedLeadItems.reduce((acc, item) => acc + item.quantity, 0),
+        locationUrl: lead.locationUrl,
+        orderLines: groupedLeadItems.map((item) => formatOrderLine(item, brlFormatter)),
+      }
+    }),
     topProducts: Array.from(topProductsMap.values())
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 8),

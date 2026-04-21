@@ -34,6 +34,8 @@ import {
   formatarCoordenadas,
 } from "@/lib/maps"
 import { reportMetaInitiateCheckout, reportMetaLead } from "@/lib/metaPixel"
+import { formatOrderLine } from "@/lib/order-formatting"
+import { generateOrderReference } from "@/lib/order-reference"
 import { postJsonInBackground } from "@/lib/postJsonInBackground"
 import { WHATSAPP_NUMBER } from "@/lib/site"
 import { cn } from "@/lib/utils"
@@ -553,14 +555,20 @@ export function CartDrawer() {
       const totalAtual = subtotal + (entregaFinal?.taxaFinal ?? 0)
       const pagamento = construirPagamento(totalAtual)
       if (!pagamento) return
+      const orderReference = generateOrderReference()
 
-      const linhasItens = grupos.flatMap((grupo, index) => [
-        `${index + 1}. ${grupo.quantidade}x ${grupo.nome}`,
-        `   Detalhes: ${
-          grupo.recheios.length > 0 ? grupo.recheios.join(", ") : "Sem adicionais"
-        }`,
-        `   Valor: ${BRL.format(grupo.precoUnitario * grupo.quantidade)}`,
-      ])
+      const linhasItens = grupos.map((grupo) =>
+        formatOrderLine(
+          {
+            productId: grupo.productId,
+            productName: grupo.nome,
+            quantity: grupo.quantidade,
+            unitPrice: grupo.precoUnitario,
+            fillings: grupo.recheios,
+          },
+          BRL
+        )
+      )
 
       const linhasResumo = [`Subtotal: ${BRL.format(subtotal)}`]
 
@@ -634,6 +642,7 @@ export function CartDrawer() {
 
       const linhas = [
         "*NOVO PEDIDO*",
+        `Pedido: ${orderReference}`,
         `Data: ${formatarDataHoraPedido()}`,
         "",
         "*ITENS*",
@@ -650,6 +659,7 @@ export function CartDrawer() {
       ]
 
       postJsonInBackground("/api/leads", {
+        orderReference,
         sessionId,
         subtotal,
         deliveryFee: entregaFinal?.taxaFinal ?? 0,
@@ -814,7 +824,9 @@ export function CartDrawer() {
                         <div className="font-medium text-foreground">
                           {grupo.quantidade}x {grupo.nome}
                         </div>
-                        <p className="text-sm text-muted-foreground">{grupo.descricao}</p>
+                        {grupo.descricao ? (
+                          <p className="text-sm text-muted-foreground">{grupo.descricao}</p>
+                        ) : null}
                         <p className="mt-1 text-sm font-medium text-foreground">
                           {BRL.format(grupo.precoUnitario * grupo.quantidade)}
                         </p>

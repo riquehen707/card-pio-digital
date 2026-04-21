@@ -1,4 +1,9 @@
 import type { ItemCarrinho } from "@/types/carrinho"
+import {
+  formatCustomizationSummary,
+  normalizeOrderFillings,
+  normalizeOrderText,
+} from "@/lib/order-formatting"
 
 export type GrupoCarrinho = {
   chave: string
@@ -12,15 +17,11 @@ export type GrupoCarrinho = {
 }
 
 function normalizarRecheios(recheios?: string[]) {
-  return [...(recheios ?? [])]
-    .map((recheio) => recheio.trim())
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b, "pt-BR"))
+  return normalizeOrderFillings(recheios)
 }
 
-function criarDescricao(nome: string, recheios: string[]) {
-  if (recheios.length === 0) return `${nome} sem adicionais`
-  return `${nome} com ${recheios.join(", ")}`
+function criarDescricao(productId: string, recheios: string[]) {
+  return formatCustomizationSummary(productId, recheios) ?? ""
 }
 
 export function agruparItens(itens: ItemCarrinho[]): GrupoCarrinho[] {
@@ -28,7 +29,7 @@ export function agruparItens(itens: ItemCarrinho[]): GrupoCarrinho[] {
 
   itens.forEach((item, index) => {
     const recheios = normalizarRecheios(item.recheios)
-    const chave = `${item.id}|${recheios.join(",")}`
+    const chave = `${item.id}|${recheios.map((recheio) => normalizeOrderText(recheio)).join(",")}`
     const grupo = grupos.get(chave)
 
     if (!grupo) {
@@ -40,7 +41,7 @@ export function agruparItens(itens: ItemCarrinho[]): GrupoCarrinho[] {
         quantidade: 1,
         recheios,
         indices: [index],
-        descricao: criarDescricao(item.nome, recheios),
+        descricao: criarDescricao(item.id, recheios),
       })
       return
     }

@@ -32,6 +32,7 @@ export type LeadCheckoutItemInput = {
 }
 
 export type LeadCheckoutInput = {
+  orderReference?: string | null
   sessionId?: string | null
   subtotal: number
   deliveryFee: number

@@ -3,6 +3,8 @@ import { NextResponse } from "next/server"
 import { Prisma } from "@/generated/prisma/client"
 import { getCatalogProductById } from "@/lib/catalog"
 import { db } from "@/lib/db"
+import { groupOrderItems } from "@/lib/order-formatting"
+import { generateOrderReference, normalizeOrderReference } from "@/lib/order-reference"
 import type { LeadCheckoutInput } from "@/types/analytics"
 
 export const runtime = "nodejs"
@@ -27,6 +29,23 @@ export async function POST(request: Request) {
   if (!isFiniteNumber(body.subtotal) || !isFiniteNumber(body.deliveryFee) || !isFiniteNumber(body.total)) {
     return NextResponse.json({ error: "subtotal, deliveryFee and total are required" }, { status: 400 })
   }
+
+  const groupedItems = groupOrderItems(
+    body.items.map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      category: item.category ?? null,
+      fillings: item.fillings ?? [],
+    }))
+  )
+
+  if (groupedItems.length === 0) {
+    return NextResponse.json({ error: "items are required" }, { status: 400 })
+  }
+
+  const orderReference = normalizeOrderReference(body.orderReference) ?? generateOrderReference()
 
   const session = body.sessionId
     ? await db.visitorSession.findUnique({
@@ -53,22 +72,23 @@ export async function POST(request: Request) {
       gbraid: session?.gbraid ?? null,
       wbraid: session?.wbraid ?? null,
       fbclid: session?.fbclid ?? null,
-      rawPayload: body as Prisma.InputJsonValue,
+      rawPayload: { ...body, orderReference } as Prisma.InputJsonValue,
       items: {
-        create: body.items.map((item) => {
+        create: groupedItems.map((item) => {
           const produto = getCatalogProductById(item.productId)
+          const unitPrice = item.unitPrice ?? 0
           return {
             productId: item.productId,
             productName: item.productName,
             category: item.category ?? produto?.categoria ?? null,
             quantity: item.quantity,
-            unitPrice: new Prisma.Decimal(item.unitPrice),
-            fillings: item.fillings ? (item.fillings as Prisma.InputJsonValue) : undefined,
+            unitPrice: new Prisma.Decimal(unitPrice),
+            fillings: item.fillings.length > 0 ? (item.fillings as Prisma.InputJsonValue) : undefined,
           }
         }),
       },
     },
   })
 
-  return NextResponse.json({ ok: true, leadId: lead.id })
+  return NextResponse.json({ ok: true, leadId: lead.id, orderReference })
 }

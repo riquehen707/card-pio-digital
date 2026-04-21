@@ -39,6 +39,34 @@ function MetricCard({
   )
 }
 
+function SalesReportCard({
+  label,
+  orders,
+  revenue,
+  averageTicket,
+  itemsSold,
+}: {
+  label: string
+  orders: number
+  revenue: number
+  averageTicket: number
+  itemsSold: number
+}) {
+  return (
+    <div className="rounded-[28px] border border-border bg-card p-5 shadow-sm">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
+        {BRL.format(revenue)}
+      </p>
+      <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+        <p>{NUMBER.format(orders)} pedido(s)</p>
+        <p>Ticket medio de {BRL.format(averageTicket)}</p>
+        <p>{NUMBER.format(itemsSold)} item(ns) vendidos</p>
+      </div>
+    </div>
+  )
+}
+
 export default async function AdminPage() {
   const isAuthenticated = await verifyAdminSession()
   if (!isAuthenticated) {
@@ -114,6 +142,67 @@ export default async function AdminPage() {
             data.summary.googleAdsImpressions
           )} impressões`}
         />
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <div className="rounded-[32px] border border-border bg-card p-5 shadow-sm">
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold text-foreground">Relatorios de venda</h2>
+            <p className="text-sm text-muted-foreground">
+              Resumo financeiro dos pedidos enviados pelo WhatsApp.
+            </p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <SalesReportCard
+              label="Hoje"
+              orders={data.salesReports.today.orders}
+              revenue={data.salesReports.today.revenue}
+              averageTicket={data.salesReports.today.averageTicket}
+              itemsSold={data.salesReports.today.itemsSold}
+            />
+            <SalesReportCard
+              label="Ultimos 7 dias"
+              orders={data.salesReports.last7Days.orders}
+              revenue={data.salesReports.last7Days.revenue}
+              averageTicket={data.salesReports.last7Days.averageTicket}
+              itemsSold={data.salesReports.last7Days.itemsSold}
+            />
+            <SalesReportCard
+              label="Ultimos 30 dias"
+              orders={data.salesReports.last30Days.orders}
+              revenue={data.salesReports.last30Days.revenue}
+              averageTicket={data.salesReports.last30Days.averageTicket}
+              itemsSold={data.salesReports.last30Days.itemsSold}
+            />
+          </div>
+        </div>
+
+        <div className="rounded-[32px] border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-xl font-semibold text-foreground">Pagamentos em 30 dias</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Quantidade de pedidos e valor total por forma de pagamento.
+          </p>
+          <div className="mt-4 overflow-hidden rounded-3xl border border-border">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-secondary/60 text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Metodo</th>
+                  <th className="px-4 py-3 font-medium">Pedidos</th>
+                  <th className="px-4 py-3 font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.salesReports.paymentMethods.map((method) => (
+                  <tr key={method.method} className="border-t border-border bg-background">
+                    <td className="px-4 py-3 text-foreground">{method.method}</td>
+                    <td className="px-4 py-3 text-foreground">{NUMBER.format(method.orders)}</td>
+                    <td className="px-4 py-3 text-foreground">{BRL.format(method.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
@@ -285,18 +374,26 @@ export default async function AdminPage() {
               <div key={lead.id} className="rounded-3xl border border-border bg-background p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary/70">
+                      Pedido {lead.orderReference}
+                    </p>
                     <p className="font-medium text-foreground">{BRL.format(lead.total)}</p>
                     <p className="text-sm text-muted-foreground">
                       {formatDateTime(lead.createdAt)}
                     </p>
                   </div>
                   <div className="text-right text-xs text-muted-foreground">
+                    <div>{lead.paymentMethod}</div>
                     <div>{lead.utmCampaign || "Sem campanha"}</div>
                     <div>{lead.gclid ? "Com GCLID" : "Sem GCLID"}</div>
                   </div>
                 </div>
                 <div className="mt-3 text-sm text-foreground">
-                  {lead.items.map((item) => `${item.quantity}x ${item.name}`).join(", ")}
+                  <div className="space-y-1">
+                    {lead.orderLines.map((line) => (
+                      <p key={`${lead.id}-${line}`}>{line}</p>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}
